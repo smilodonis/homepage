@@ -16,13 +16,15 @@
         .chart-container h3 { margin-top: 0; }
         .stock-info { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: left;}
         .current-price { font-size: 1.5em; font-weight: bold; margin-bottom: 10px; }
+        .market-status { font-size: 1em; font-weight: normal; vertical-align: middle; margin-left: 10px;}
+        .last-updated { font-size: 0.8em; color: #999; }
     </style>
 </head>
 <body>
     <h1>My Enhanced Data Dashboard</h1>
 
     <div class="dashboard">
-        <h2>Stock Market</h2>
+        <h2>Stock Market <span id="market-status" class="market-status"></span></h2>
         <div id="stock-charts" class="charts-grid"></div>
 
         <h2>Cryptocurrency</h2>
@@ -88,6 +90,7 @@
                     } else {
                         createChart(canvasId, dates, prices, `${ticker} Closing Price`, 'rgba(75, 192, 192, 1)');
                     }
+                    document.getElementById(`updated-${ticker}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
                 });
         }
 
@@ -96,6 +99,7 @@
                 fetch(`/api/crypto/history/${coin}`)
                     .then(response => response.json())
                     .then(data => {
+                        if (!data || data.length === 0) return;
                         const dates = data.map(item => new Date(item[0]));
                         const prices = data.map(item => item[1]);
                         const canvasId = `chart-${coin}`;
@@ -114,6 +118,7 @@
                 .then(prices => {
                     for (const coin in prices) {
                         document.getElementById(`price-${coin}`).textContent = `$${prices[coin].usd.toLocaleString()}`;
+                        document.getElementById(`updated-${coin}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
                     }
                 });
         }
@@ -127,7 +132,8 @@
                     <h3>${ticker}</h3>
                     <div class="current-price" id="price-${ticker}">-</div>
                     <div class="stock-info" id="info-${ticker}">Loading info...</div>
-                    <canvas id="chart-${ticker}"></canvas>`;
+                    <canvas id="chart-${ticker}"></canvas>
+                    <div class="last-updated" id="updated-${ticker}"></div>`;
                 stockChartsContainer.appendChild(chartDiv);
                 fetchStockData(ticker);
             });
@@ -139,7 +145,8 @@
                 chartDiv.innerHTML = `
                     <h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3>
                     <div class="current-price" id="price-${coin}">-</div>
-                    <canvas id="chart-${coin}"></canvas>`;
+                    <canvas id="chart-${coin}"></canvas>
+                    <div class="last-updated" id="updated-${coin}"></div>`;
                 cryptoChartsContainer.appendChild(chartDiv);
             });
             fetchCryptoData();
@@ -150,9 +157,70 @@
             fetchCryptoData();
         }
 
+        let refreshInterval;
+        let lastMarketStatus = null;
+
+        function updateMarketStatus() {
+            const statusEl = document.getElementById('market-status');
+            const now = new Date();
+            const nyTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+
+            const day = nyTime.getDay();
+            const hour = nyTime.getHours();
+            const minute = nyTime.getMinutes();
+
+            const isWeekday = day >= 1 && day <= 5;
+            const marketOpen = hour > 9 || (hour === 9 && minute >= 30);
+            const marketClose = hour >= 16;
+            const isOpen = isWeekday && marketOpen && !marketClose;
+
+            if (isOpen !== lastMarketStatus) {
+                lastMarketStatus = isOpen;
+                
+                if (refreshInterval) clearInterval(refreshInterval);
+
+                if (isOpen) {
+                    refreshInterval = setInterval(refreshData, 10000); // 10 seconds
+                } else {
+                    refreshInterval = setInterval(refreshData, 3600000); // 1 hour
+                }
+                refreshData(); 
+            }
+
+            statusEl.style.color = isOpen ? 'green' : 'black';
+
+            if (isOpen) {
+                const closeTime = new Date(nyTime);
+                closeTime.setHours(16, 0, 0, 0);
+                const diff = closeTime - nyTime;
+                statusEl.textContent = `Closes in: ${formatCountdown(diff)}`;
+            } else {
+                let openTime = new Date(nyTime);
+                if (day === 5 && (hour > 16 || (hour === 16 && minute > 0))) {
+                    openTime.setDate(nyTime.getDate() + 3);
+                } else if (day === 6) {
+                    openTime.setDate(nyTime.getDate() + 2);
+                } else if (hour > 16 || (hour === 16 && minute > 0)) {
+                     openTime.setDate(nyTime.getDate() + 1);
+                }
+                openTime.setHours(9, 30, 0, 0);
+                const diff = openTime - nyTime;
+                statusEl.textContent = `Opens in: ${formatCountdown(diff)}`;
+            }
+        }
+
+        function formatCountdown(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initializeDashboard();
-            setInterval(refreshData, 300000); // 300000ms = 5 minutes
+            setInterval(updateMarketStatus, 1000);
+            updateMarketStatus();
         });
     </script>
 </body>

@@ -39,7 +39,10 @@ def get_crypto_prices():
 def get_crypto_history(coin):
     url = f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart?vs_currency=usd&days=180"
     response = requests.get(url)
-    data = response.json()
+    try:
+        data = response.json()
+    except requests.exceptions.JSONDecodeError:
+        data = {}
     return jsonify(data.get('prices', []))
 
 if __name__ == '__main__':
