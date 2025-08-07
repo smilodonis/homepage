@@ -23,11 +23,39 @@
         .nav-button.active { color: #007aff; border-bottom: 2px solid #007aff; }
         .page { display: none; }
         .page.active { display: block; }
-        #news-container { max-width: 800px; margin: 0 auto; }
-        .news-item { background-color: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .news-item h3 { margin-top: 0; }
-        .news-item a { text-decoration: none; color: #007aff; }
-        .news-item p { color: #666; }
+        #news-container { max-width: 800px; margin: 20px auto; }
+        .news-item {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .news-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .news-item h3 {
+            margin-top: 0;
+            font-size: 1.25em;
+        }
+        .news-item a {
+            text-decoration: none;
+            color: #007aff;
+            font-weight: 600;
+        }
+        .news-item a:hover {
+            text-decoration: underline;
+        }
+        .news-item p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .news-item small {
+            font-size: 0.85em;
+            color: #888;
+        }
     </style>
 </head>
 <body>
