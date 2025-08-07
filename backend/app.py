@@ -1,12 +1,30 @@
 from flask import Flask, jsonify, send_from_directory, request
 import yfinance as yf
 import requests
+import feedparser
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
 
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/api/news')
+def get_news():
+    feeds = {
+        "Reuters": "https://www.reuters.com/markets/us/rss",
+        "StockTitan": "https://www.stocktitan.net/rss"
+    }
+    all_entries = []
+    for source, url in feeds.items():
+        feed = feedparser.parse(url)
+        for entry in feed.entries:
+            entry['source'] = source
+            all_entries.append(entry)
+    
+    all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
+    return jsonify(all_entries)
+
 
 @app.route('/api/stock/<ticker>')
 def get_stock_data(ticker):

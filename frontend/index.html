@@ -18,17 +18,37 @@
         .current-price { font-size: 1.5em; font-weight: bold; margin-bottom: 10px; }
         .market-status { font-size: 1em; font-weight: normal; vertical-align: middle; margin-left: 10px;}
         .last-updated { font-size: 0.8em; color: #999; }
+        .nav { background-color: #fff; padding: 10px 20px; border-bottom: 1px solid #ddd; text-align: center; }
+        .nav-button { background: none; border: none; font-size: 1.1em; padding: 10px 20px; cursor: pointer; color: #333; transition: color 0.3s; }
+        .nav-button.active { color: #007aff; border-bottom: 2px solid #007aff; }
+        .page { display: none; }
+        .page.active { display: block; }
+        #news-container { max-width: 800px; margin: 0 auto; }
+        .news-item { background-color: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .news-item h3 { margin-top: 0; }
+        .news-item a { text-decoration: none; color: #007aff; }
+        .news-item p { color: #666; }
     </style>
 </head>
 <body>
-    <h1>My Enhanced Data Dashboard</h1>
+    <div class="nav">
+        <button class="nav-button active" onclick="showPage('dashboard')">Dashboard</button>
+        <button class="nav-button" onclick="showPage('news')">News</button>
+    </div>
 
-    <div class="dashboard">
-        <h2>Stock Market <span id="market-status" class="market-status"></span></h2>
-        <div id="stock-charts" class="charts-grid"></div>
+    <div id="dashboard" class="page active">
+        <h1>My Enhanced Data Dashboard</h1>
+        <div class="dashboard-content">
+            <h2>Stock Market <span id="market-status" class="market-status"></span></h2>
+            <div id="stock-charts" class="charts-grid"></div>
+            <h2>Cryptocurrency</h2>
+            <div id="crypto-charts" class="charts-grid"></div>
+        </div>
+    </div>
 
-        <h2>Cryptocurrency</h2>
-        <div id="crypto-charts" class="charts-grid"></div>
+    <div id="news" class="page">
+        <h1>Market News</h1>
+        <div id="news-container"></div>
     </div>
 
     <script>
@@ -123,8 +143,15 @@
                 });
         }
 
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(button => button.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelector(`.nav-button[onclick="showPage('${pageId}')"]`).classList.add('active');
+        }
+
         function initializeDashboard() {
-            stockChartsContainer = document.getElementById('stock-charts');
+            const stockContainer = document.getElementById('stock-charts');
             stocks.forEach(ticker => {
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart-container';
@@ -134,11 +161,11 @@
                     <div class="stock-info" id="info-${ticker}">Loading info...</div>
                     <canvas id="chart-${ticker}"></canvas>
                     <div class="last-updated" id="updated-${ticker}"></div>`;
-                stockChartsContainer.appendChild(chartDiv);
+                stockContainer.appendChild(chartDiv);
                 fetchStockData(ticker);
             });
 
-            cryptoChartsContainer = document.getElementById('crypto-charts');
+            const cryptoContainer = document.getElementById('crypto-charts');
             cryptos.forEach(coin => {
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart-container';
@@ -147,9 +174,28 @@
                     <div class="current-price" id="price-${coin}">-</div>
                     <canvas id="chart-${coin}"></canvas>
                     <div class="last-updated" id="updated-${coin}"></div>`;
-                cryptoChartsContainer.appendChild(chartDiv);
+                cryptoContainer.appendChild(chartDiv);
             });
             fetchCryptoData();
+        }
+
+        function fetchNews() {
+            const newsContainer = document.getElementById('news-container');
+            fetch('/api/news')
+                .then(response => response.json())
+                .then(newsItems => {
+                    newsContainer.innerHTML = '';
+                    newsItems.forEach(item => {
+                        const newsDiv = document.createElement('div');
+                        newsDiv.className = 'news-item';
+                        newsDiv.innerHTML = `
+                            <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
+                            <p>${item.summary}</p>
+                            <small><strong>Source:</strong> ${item.source} | <strong>Published:</strong> ${new Date(item.published).toLocaleString()}</small>
+                        `;
+                        newsContainer.appendChild(newsDiv);
+                    });
+                });
         }
 
         function refreshData() {
@@ -180,7 +226,7 @@
                 if (refreshInterval) clearInterval(refreshInterval);
 
                 if (isOpen) {
-                    refreshInterval = setInterval(refreshData, 10000); // 10 seconds
+                    refreshInterval = setInterval(refreshData, 60000); // 1 minute
                 } else {
                     refreshInterval = setInterval(refreshData, 3600000); // 1 hour
                 }
@@ -219,6 +265,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initializeDashboard();
+            fetchNews();
             setInterval(updateMarketStatus, 1000);
             updateMarketStatus();
         });
