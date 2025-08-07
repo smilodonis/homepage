@@ -12,9 +12,10 @@
         h1, h2 { text-align: center; color: #1a1a1a; }
         .dashboard { max-width: 1600px; margin: 0 auto; padding: 20px; }
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
-        .chart-container { background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chart-container { background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
         .chart-container h3 { margin-top: 0; }
-        .stock-info { font-size: 0.9em; color: #666; }
+        .stock-info { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: left;}
+        .current-price { font-size: 1.5em; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -29,19 +30,24 @@
     </div>
 
     <script>
-        const stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+        const stocks = ['AAPL', 'MSFT', 'GOOGL', 'BITO', 'TSLA', 'NVDA'];
         const cryptos = ['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin', 'cardano'];
 
         const stockChartsContainer = document.getElementById('stock-charts');
         stocks.forEach(ticker => {
             const chartDiv = document.createElement('div');
             chartDiv.className = 'chart-container';
-            chartDiv.innerHTML = `<h3>${ticker}</h3><div class="stock-info" id="info-${ticker}">Loading info...</div><canvas id="chart-${ticker}"></canvas>`;
+            chartDiv.innerHTML = `
+                <h3>${ticker}</h3>
+                <div class="current-price" id="price-${ticker}">-</div>
+                <div class="stock-info" id="info-${ticker}">Loading info...</div>
+                <canvas id="chart-${ticker}"></canvas>`;
             stockChartsContainer.appendChild(chartDiv);
 
             fetch(`/api/stock/${ticker}`)
                 .then(response => response.json())
                 .then(data => {
+                    document.getElementById(`price-${ticker}`).textContent = `$${data.info.currentPrice.toFixed(2)}`;
                     const infoDiv = document.getElementById(`info-${ticker}`);
                     infoDiv.innerHTML = `
                         <strong>${data.info.shortName || ticker}</strong> (${data.info.symbol})<br>
@@ -60,7 +66,10 @@
         cryptos.forEach(coin => {
             const chartDiv = document.createElement('div');
             chartDiv.className = 'chart-container';
-            chartDiv.innerHTML = `<h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3><canvas id="chart-${coin}"></canvas>`;
+            chartDiv.innerHTML = `
+                <h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3>
+                <div class="current-price" id="price-${coin}">-</div>
+                <canvas id="chart-${coin}"></canvas>`;
             cryptoChartsContainer.appendChild(chartDiv);
 
             fetch(`/api/crypto/history/${coin}`)
@@ -71,6 +80,16 @@
                     createChart(`chart-${coin}`, dates, prices, `${coin.charAt(0).toUpperCase() + coin.slice(1)} Price`, 'rgba(255, 159, 64, 1)');
                 });
         });
+
+        // Fetch all crypto prices in one go
+        const cryptoIds = cryptos.join(',');
+        fetch(`/api/crypto/prices?ids=${cryptoIds}`)
+            .then(response => response.json())
+            .then(prices => {
+                for (const coin in prices) {
+                    document.getElementById(`price-${coin}`).textContent = `$${prices[coin].usd.toLocaleString()}`;
+                }
+            });
 
         function createChart(canvasId, labels, data, label, color) {
             const ctx = document.getElementById(canvasId).getContext('2d');
