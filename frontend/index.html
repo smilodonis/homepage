@@ -32,68 +32,11 @@
     <script>
         const stocks = ['AAPL', 'MSFT', 'GOOGL', 'BITO', 'TSLA', 'NVDA'];
         const cryptos = ['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin', 'cardano'];
-
-        const stockChartsContainer = document.getElementById('stock-charts');
-        stocks.forEach(ticker => {
-            const chartDiv = document.createElement('div');
-            chartDiv.className = 'chart-container';
-            chartDiv.innerHTML = `
-                <h3>${ticker}</h3>
-                <div class="current-price" id="price-${ticker}">-</div>
-                <div class="stock-info" id="info-${ticker}">Loading info...</div>
-                <canvas id="chart-${ticker}"></canvas>`;
-            stockChartsContainer.appendChild(chartDiv);
-
-            fetch(`/api/stock/${ticker}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById(`price-${ticker}`).textContent = `$${data.info.currentPrice.toFixed(2)}`;
-                    const infoDiv = document.getElementById(`info-${ticker}`);
-                    infoDiv.innerHTML = `
-                        <strong>${data.info.shortName || ticker}</strong> (${data.info.symbol})<br>
-                        Sector: ${data.info.sector || 'N/A'}<br>
-                        Market Cap: ${data.info.marketCap ? (data.info.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}<br>
-                        P/E Ratio: ${data.info.trailingPE ? data.info.trailingPE.toFixed(2) : 'N/A'}
-                    `;
-
-                    const dates = data.history.map(item => new Date(item.Date));
-                    const prices = data.history.map(item => item.Close);
-                    createChart(`chart-${ticker}`, dates, prices, `${ticker} Closing Price`, 'rgba(75, 192, 192, 1)');
-                });
-        });
-
-        const cryptoChartsContainer = document.getElementById('crypto-charts');
-        cryptos.forEach(coin => {
-            const chartDiv = document.createElement('div');
-            chartDiv.className = 'chart-container';
-            chartDiv.innerHTML = `
-                <h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3>
-                <div class="current-price" id="price-${coin}">-</div>
-                <canvas id="chart-${coin}"></canvas>`;
-            cryptoChartsContainer.appendChild(chartDiv);
-
-            fetch(`/api/crypto/history/${coin}`)
-                .then(response => response.json())
-                .then(data => {
-                    const dates = data.map(item => new Date(item[0]));
-                    const prices = data.map(item => item[1]);
-                    createChart(`chart-${coin}`, dates, prices, `${coin.charAt(0).toUpperCase() + coin.slice(1)} Price`, 'rgba(255, 159, 64, 1)');
-                });
-        });
-
-        // Fetch all crypto prices in one go
-        const cryptoIds = cryptos.join(',');
-        fetch(`/api/crypto/prices?ids=${cryptoIds}`)
-            .then(response => response.json())
-            .then(prices => {
-                for (const coin in prices) {
-                    document.getElementById(`price-${coin}`).textContent = `$${prices[coin].usd.toLocaleString()}`;
-                }
-            });
+        const charts = {}; // To hold chart instances
 
         function createChart(canvasId, labels, data, label, color) {
             const ctx = document.getElementById(canvasId).getContext('2d');
-            new Chart(ctx, {
+            charts[canvasId] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -114,6 +57,103 @@
                 }
             });
         }
+
+        function updateChart(canvasId, labels, data) {
+            if (charts[canvasId]) {
+                charts[canvasId].data.labels = labels;
+                charts[canvasId].data.datasets[0].data = data;
+                charts[canvasId].update();
+            }
+        }
+
+        function fetchStockData(ticker) {
+            fetch(`/api/stock/${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById(`price-${ticker}`).textContent = `$${data.info.currentPrice.toFixed(2)}`;
+                    const infoDiv = document.getElementById(`info-${ticker}`);
+                    infoDiv.innerHTML = `
+                        <strong>${data.info.shortName || ticker}</strong> (${data.info.symbol})<br>
+                        Sector: ${data.info.sector || 'N/A'}<br>
+                        Market Cap: ${data.info.marketCap ? (data.info.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}<br>
+                        P/E Ratio: ${data.info.trailingPE ? data.info.trailingPE.toFixed(2) : 'N/A'}
+                    `;
+                    
+                    const dates = data.history.map(item => new Date(item.Date));
+                    const prices = data.history.map(item => item.Close);
+                    const canvasId = `chart-${ticker}`;
+
+                    if (charts[canvasId]) {
+                        updateChart(canvasId, dates, prices);
+                    } else {
+                        createChart(canvasId, dates, prices, `${ticker} Closing Price`, 'rgba(75, 192, 192, 1)');
+                    }
+                });
+        }
+
+        function fetchCryptoData() {
+            cryptos.forEach(coin => {
+                fetch(`/api/crypto/history/${coin}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const dates = data.map(item => new Date(item[0]));
+                        const prices = data.map(item => item[1]);
+                        const canvasId = `chart-${coin}`;
+                        
+                        if (charts[canvasId]) {
+                            updateChart(canvasId, dates, prices);
+                        } else {
+                            createChart(canvasId, dates, prices, `${coin.charAt(0).toUpperCase() + coin.slice(1)} Price`, 'rgba(255, 159, 64, 1)');
+                        }
+                    });
+            });
+
+            const cryptoIds = cryptos.join(',');
+            fetch(`/api/crypto/prices?ids=${cryptoIds}`)
+                .then(response => response.json())
+                .then(prices => {
+                    for (const coin in prices) {
+                        document.getElementById(`price-${coin}`).textContent = `$${prices[coin].usd.toLocaleString()}`;
+                    }
+                });
+        }
+
+        function initializeDashboard() {
+            stockChartsContainer = document.getElementById('stock-charts');
+            stocks.forEach(ticker => {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                chartDiv.innerHTML = `
+                    <h3>${ticker}</h3>
+                    <div class="current-price" id="price-${ticker}">-</div>
+                    <div class="stock-info" id="info-${ticker}">Loading info...</div>
+                    <canvas id="chart-${ticker}"></canvas>`;
+                stockChartsContainer.appendChild(chartDiv);
+                fetchStockData(ticker);
+            });
+
+            cryptoChartsContainer = document.getElementById('crypto-charts');
+            cryptos.forEach(coin => {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                chartDiv.innerHTML = `
+                    <h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3>
+                    <div class="current-price" id="price-${coin}">-</div>
+                    <canvas id="chart-${coin}"></canvas>`;
+                cryptoChartsContainer.appendChild(chartDiv);
+            });
+            fetchCryptoData();
+        }
+
+        function refreshData() {
+            stocks.forEach(fetchStockData);
+            fetchCryptoData();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDashboard();
+            setInterval(refreshData, 300000); // 300000ms = 5 minutes
+        });
     </script>
 </body>
 </html>
