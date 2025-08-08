@@ -56,6 +56,19 @@
             font-size: 0.85em;
             color: #888;
         }
+        .price-info {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .daily-change {
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -87,7 +100,14 @@
 
     <script>
         const stocks = ['AAPL', 'MSFT', 'GOOGL', 'BITO', 'TSLA', 'NVDA'];
-        const cryptos = ['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin', 'cardano'];
+        const cryptos = [
+            { id: 'BTC', name: 'Bitcoin' },
+            { id: 'ETH', name: 'Ethereum' },
+            { id: 'SOL', name: 'Solana' },
+            { id: 'XRP', name: 'XRP (Ripple)' },
+            { id: 'DOGE', name: 'Dogecoin' },
+            { id: 'ADA', name: 'Cardano' }
+        ];
         const charts = {}; // To hold chart instances
 
         function createChart(canvasId, labels, data, label, color) {
@@ -127,6 +147,19 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById(`price-${ticker}`).textContent = `$${data.info.currentPrice.toFixed(2)}`;
+                    
+                    const changeEl = document.getElementById(`change-${ticker}`);
+                    const change = data.info.change.toFixed(2);
+                    const changePercent = data.info.changePercent.toFixed(2);
+                    
+                    changeEl.textContent = `${change} (${changePercent}%)`;
+                    changeEl.className = 'daily-change';
+                    if (data.info.change > 0) {
+                        changeEl.classList.add('positive');
+                    } else if (data.info.change < 0) {
+                        changeEl.classList.add('negative');
+                    }
+
                     const infoDiv = document.getElementById(`info-${ticker}`);
                     infoDiv.innerHTML = `
                         <strong>${data.info.shortName || ticker}</strong> (${data.info.symbol})<br>
@@ -149,32 +182,52 @@
         }
 
         function fetchCryptoData() {
+            const cryptoIds = cryptos.map(c => c.id).join(',');
+            fetch(`/api/crypto/prices?fsyms=${cryptoIds}`)
+                .then(response => response.json())
+                .then(prices => {
+                    cryptos.forEach(coin => {
+                        if (prices[coin.id]) {
+                            const priceEl = document.getElementById(`price-${coin.id}`);
+                            if (priceEl) {
+                                priceEl.textContent = `$${prices[coin.id].price.toLocaleString()}`;
+                            }
+                            const changeEl = document.getElementById(`change-${coin.id}`);
+                            if (changeEl) {
+                                const change = prices[coin.id].change.toFixed(2);
+                                const changePercent = prices[coin.id].changePercent.toFixed(2);
+                                changeEl.textContent = `${change} (${changePercent}%)`;
+                                changeEl.className = 'daily-change';
+                                if (prices[coin.id].change > 0) {
+                                    changeEl.classList.add('positive');
+                                } else if (prices[coin.id].change < 0) {
+                                    changeEl.classList.add('negative');
+                                }
+                            }
+                            const updatedEl = document.getElementById(`updated-${coin.id}`);
+                            if (updatedEl) {
+                                updatedEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                            }
+                        }
+                    });
+                });
+
             cryptos.forEach(coin => {
-                fetch(`/api/crypto/history/${coin}`)
+                fetch(`/api/crypto/history/${coin.id}`)
                     .then(response => response.json())
                     .then(data => {
                         if (!data || data.length === 0) return;
                         const dates = data.map(item => new Date(item[0]));
                         const prices = data.map(item => item[1]);
-                        const canvasId = `chart-${coin}`;
+                        const canvasId = `chart-${coin.id}`;
                         
                         if (charts[canvasId]) {
                             updateChart(canvasId, dates, prices);
                         } else {
-                            createChart(canvasId, dates, prices, `${coin.charAt(0).toUpperCase() + coin.slice(1)} Price`, 'rgba(255, 159, 64, 1)');
+                            createChart(canvasId, dates, prices, `${coin.name} Price`, 'rgba(255, 159, 64, 1)');
                         }
                     });
             });
-
-            const cryptoIds = cryptos.join(',');
-            fetch(`/api/crypto/prices?ids=${cryptoIds}`)
-                .then(response => response.json())
-                .then(prices => {
-                    for (const coin in prices) {
-                        document.getElementById(`price-${coin}`).textContent = `$${prices[coin].usd.toLocaleString()}`;
-                        document.getElementById(`updated-${coin}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-                    }
-                });
         }
 
         function showPage(pageId) {
@@ -198,7 +251,10 @@
                 chartDiv.className = 'chart-container';
                 chartDiv.innerHTML = `
                     <h3>${ticker}</h3>
-                    <div class="current-price" id="price-${ticker}">-</div>
+                    <div class="price-info">
+                        <div class="current-price" id="price-${ticker}">-</div>
+                        <div class="daily-change" id="change-${ticker}"></div>
+                    </div>
                     <div class="stock-info" id="info-${ticker}">Loading info...</div>
                     <canvas id="chart-${ticker}"></canvas>
                     <div class="last-updated" id="updated-${ticker}"></div>`;
@@ -209,14 +265,17 @@
             const cryptoContainer = document.getElementById('crypto-charts');
             if (!cryptoContainer) return;
             cryptos.forEach(coin => {
-                if (document.getElementById(`chart-${coin}`)) return;
+                if (document.getElementById(`chart-${coin.id}`)) return;
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart-container';
                 chartDiv.innerHTML = `
-                    <h3>${coin.charAt(0).toUpperCase() + coin.slice(1)}</h3>
-                    <div class="current-price" id="price-${coin}">-</div>
-                    <canvas id="chart-${coin}"></canvas>
-                    <div class="last-updated" id="updated-${coin}"></div>`;
+                    <h3>${coin.name}</h3>
+                    <div class="price-info">
+                        <div class="current-price" id="price-${coin.id}">-</div>
+                        <div class="daily-change" id="change-${coin.id}"></div>
+                    </div>
+                    <canvas id="chart-${coin.id}"></canvas>
+                    <div class="last-updated" id="updated-${coin.id}"></div>`;
                 cryptoContainer.appendChild(chartDiv);
             });
             fetchCryptoData();

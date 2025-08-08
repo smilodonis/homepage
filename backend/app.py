@@ -31,6 +31,12 @@ def get_stock_data(ticker):
     stock = yf.Ticker(ticker)
     hist = stock.history(period="6mo")
     info = stock.info
+    
+    previous_close = hist['Close'].iloc[-2]
+    current_price = info.get('currentPrice') or info.get('previousClose')
+    change = current_price - previous_close
+    change_percent = (change / previous_close) * 100 if previous_close else 0
+
     data = {
         'history': hist.reset_index().to_dict(orient='records'),
         'info': {
@@ -40,28 +46,44 @@ def get_stock_data(ticker):
             'country': info.get('country'),
             'marketCap': info.get('marketCap'),
             'trailingPE': info.get('trailingPE'),
-            'currentPrice': info.get('currentPrice') or info.get('previousClose')
+            'currentPrice': current_price,
+            'change': change,
+            'changePercent': change_percent
         }
     }
     return jsonify(data)
 
 @app.route('/api/crypto/prices')
 def get_crypto_prices():
-    coins = request.args.get('ids')
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coins}&vs_currencies=usd"
+    coins = request.args.get('fsyms')
+    url = f"https://min-api.cryptocompare.com/data/pricemultifull?fsyms={coins}&tsyms=USD"
     response = requests.get(url)
-    return jsonify(response.json())
+    data = response.json()
+    
+    prices = {}
+    if 'RAW' in data:
+        for coin, details in data['RAW'].items():
+            if 'USD' in details:
+                prices[coin] = {
+                    'price': details['USD']['PRICE'],
+                    'change': details['USD']['CHANGEDAY'],
+                    'changePercent': details['USD']['CHANGEPCTDAY']
+                }
+    return jsonify(prices)
 
 
 @app.route('/api/crypto/history/<coin>')
 def get_crypto_history(coin):
-    url = f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart?vs_currency=usd&days=180"
+    url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={coin}&tsym=USD&limit=180"
     response = requests.get(url)
     try:
         data = response.json()
-    except requests.exceptions.JSONDecodeError:
-        data = {}
-    return jsonify(data.get('prices', []))
+        if 'Data' in data and 'Data' in data['Data']:
+            prices = [[item['time'] * 1000, item['close']] for item in data['Data']['Data']]
+            return jsonify(prices)
+    except (requests.exceptions.JSONDecodeError, KeyError):
+        return jsonify([])
+    return jsonify([])
 
 if __name__ == '__main__':
     app.run(debug=True, port=9999)
