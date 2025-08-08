@@ -61,11 +61,17 @@
 <body>
     <div class="nav">
         <button class="nav-button active" onclick="showPage('dashboard')">Dashboard</button>
+        <button class="nav-button" onclick="showPage('charts')">Charts</button>
         <button class="nav-button" onclick="showPage('news')">News</button>
     </div>
 
     <div id="dashboard" class="page active">
-        <h1>My Enhanced Data Dashboard</h1>
+        <h1>Dashboard</h1>
+        <p style="text-align: center;">This is the main dashboard. More content will be added here soon.</p>
+    </div>
+
+    <div id="charts" class="page">
+        <h1>Charts</h1>
         <div class="dashboard-content">
             <h2>Stock Market <span id="market-status" class="market-status"></span></h2>
             <div id="stock-charts" class="charts-grid"></div>
@@ -176,11 +182,18 @@
             document.querySelectorAll('.nav-button').forEach(button => button.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             document.querySelector(`.nav-button[onclick="showPage('${pageId}')"]`).classList.add('active');
+
+            if (pageId === 'charts') {
+                initializeCharts();
+            }
         }
 
-        function initializeDashboard() {
+        function initializeCharts() {
             const stockContainer = document.getElementById('stock-charts');
+            if (!stockContainer) return; 
+            
             stocks.forEach(ticker => {
+                if (document.getElementById(`chart-${ticker}`)) return;
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart-container';
                 chartDiv.innerHTML = `
@@ -194,7 +207,9 @@
             });
 
             const cryptoContainer = document.getElementById('crypto-charts');
+            if (!cryptoContainer) return;
             cryptos.forEach(coin => {
+                if (document.getElementById(`chart-${coin}`)) return;
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart-container';
                 chartDiv.innerHTML = `
@@ -292,10 +307,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initializeDashboard();
+            initializeCharts();
             fetchNews();
             setInterval(updateMarketStatus, 1000);
             updateMarketStatus();
+            showPage('dashboard');
         });
     </script>
 </body>
