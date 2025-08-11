@@ -9,11 +9,20 @@
     .settings { max-width: 1100px; margin: 0 auto; padding: 20px; }
     .settings h2 { text-align: left; }
     .section { background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; margin-bottom:16px; }
-    .grid { display:grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:8px; align-items:center; }
-    .grid.crypto { grid-template-columns: 1fr 1fr 1fr auto; }
-    .grid.simple { grid-template-columns: 2fr 1fr auto; }
-    .grid > input { padding:8px; border:1px solid #ddd; border-radius:6px; }
-    .grid > button { padding:8px 10px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; align-items:end; }
+    .grid.crypto { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .grid.simple { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .grid > input { padding:10px 12px; border:1px solid #dcdfe6; border-radius:8px; background:#fafafa; }
+    .grid > button { padding:0 12px; height:42px; border-radius:8px; align-self:end; }
+    .remove-btn { padding:0 12px; height:42px; border-radius:8px; align-self:end; }
+    .field { display:block; min-width:0; }
+    .field-label { display:block; font-size:0.8em; color:#666; margin-bottom:6px; letter-spacing:.2px; }
+    .field input { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #dcdfe6; border-radius:8px; background:#fafafa; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+    .field input:focus { outline:none; border-color:#007aff; box-shadow:0 0 0 3px rgba(0,122,255,.15); background:#fff; }
+    /* Hide number input spinners for a cleaner look */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
     .toolbar { display:flex; justify-content: flex-end; gap:10px; margin-top: 10px; }
     .primary { background:#007aff; color:#fff; border:1px solid #007aff; border-radius:6px; }
     .danger { background:#dc3545; color:#fff; border:1px solid #dc3545; border-radius:6px; }
