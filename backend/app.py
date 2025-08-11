@@ -28,30 +28,35 @@ def get_news():
 
 @app.route('/api/stock/<ticker>')
 def get_stock_data(ticker):
+    period = request.args.get('period', '6mo')
     stock = yf.Ticker(ticker)
-    hist = stock.history(period="6mo")
-    info = stock.info
+    hist = stock.history(period=period)
     
-    previous_close = hist['Close'].iloc[-2]
-    current_price = info.get('currentPrice') or info.get('previousClose')
-    change = current_price - previous_close
-    change_percent = (change / previous_close) * 100 if previous_close else 0
-
-    data = {
-        'history': hist.reset_index().to_dict(orient='records'),
-        'info': {
-            'shortName': info.get('shortName'),
-            'symbol': info.get('symbol'),
-            'sector': info.get('sector'),
-            'country': info.get('country'),
-            'marketCap': info.get('marketCap'),
-            'trailingPE': info.get('trailingPE'),
-            'currentPrice': current_price,
-            'change': change,
-            'changePercent': change_percent
+    # For the main chart view, we need more info
+    if period == '6mo':
+        info = stock.info
+        previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
+        current_price = info.get('currentPrice') or info.get('previousClose')
+        change = current_price - previous_close
+        change_percent = (change / previous_close) * 100 if previous_close else 0
+        data = {
+            'history': hist.reset_index().to_dict(orient='records'),
+            'info': {
+                'shortName': info.get('shortName'),
+                'symbol': info.get('symbol'),
+                'sector': info.get('sector'),
+                'country': info.get('country'),
+                'marketCap': info.get('marketCap'),
+                'trailingPE': info.get('trailingPE'),
+                'currentPrice': current_price,
+                'change': change,
+                'changePercent': change_percent
+            }
         }
-    }
-    return jsonify(data)
+        return jsonify(data)
+    else:
+        # For the big chart, just send the history
+        return jsonify(hist.reset_index().to_dict(orient='records'))
 
 @app.route('/api/crypto/prices')
 def get_crypto_prices():
@@ -74,7 +79,11 @@ def get_crypto_prices():
 
 @app.route('/api/crypto/history/<coin>')
 def get_crypto_history(coin):
-    url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={coin}&tsym=USD&limit=180"
+    period = request.args.get('period', '6mo')
+    limit_map = {'7d': 7, '1mo': 30, '6mo': 180, '1y': 365, 'max': 2000}
+    limit = limit_map.get(period, 180)
+    
+    url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={coin}&tsym=USD&limit={limit}"
     response = requests.get(url)
     try:
         data = response.json()
@@ -87,4 +96,3 @@ def get_crypto_history(coin):
 
 if __name__ == '__main__':
     app.run(debug=True, port=9999)
-

@@ -69,6 +69,40 @@
         }
         .positive { color: #28a745; }
         .negative { color: #dc3545; }
+        .big-chart-container {
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 80%;
+        }
+        .back-button {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        .timeframe-controls {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .timeframe-button {
+            background-color: #f0f2f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .timeframe-button.active {
+            background-color: #007aff;
+            color: #fff;
+            border-color: #007aff;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +125,18 @@
             <h2>Cryptocurrency</h2>
             <div id="crypto-charts" class="charts-grid"></div>
         </div>
+        <div id="big-chart-container" class="big-chart-container" style="display: none;">
+            <button id="back-button" class="back-button">← Back to all charts</button>
+            <h2 id="big-chart-title"></h2>
+            <div class="timeframe-controls">
+                <button class="timeframe-button" data-period="7d">7D</button>
+                <button class="timeframe-button" data-period="1mo">1M</button>
+                <button class="timeframe-button active" data-period="6mo">6M</button>
+                <button class="timeframe-button" data-period="1y">1Y</button>
+                <button class="timeframe-button" data-period="max">Max</button>
+            </div>
+            <canvas id="big-chart"></canvas>
+        </div>
     </div>
 
     <div id="news" class="page">
@@ -109,6 +155,7 @@
             { id: 'ADA', name: 'Cardano' }
         ];
         const charts = {}; // To hold chart instances
+        let bigChartInstance;
 
         function createChart(canvasId, labels, data, label, color) {
             const ctx = document.getElementById(canvasId).getContext('2d');
@@ -127,12 +174,99 @@
                 },
                 options: {
                     scales: {
-                        x: { type: 'time', time: { unit: 'month' } },
+                        x: { 
+                            type: 'time', 
+                            time: { 
+                                unit: 'month',
+                                displayFormats: {
+                                    month: 'MMM'
+                                }
+                            } 
+                        },
                         y: { ticks: { callback: (value) => `$${value.toLocaleString()}` } }
                     }
                 }
             });
         }
+
+        function showBigChart(id, name, type) {
+            document.getElementById('big-chart-container').style.display = 'block';
+            document.getElementById('big-chart-title').textContent = `${name} Price Chart`;
+
+            const timeframeButtons = document.querySelectorAll('.timeframe-button');
+            timeframeButtons.forEach(button => {
+                button.onclick = () => {
+                    timeframeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    fetchBigChartData(id, type, button.dataset.period);
+                };
+            });
+
+            fetchBigChartData(id, type, '6mo');
+        }
+
+        function hideBigChart() {
+            document.getElementById('big-chart-container').style.display = 'none';
+            if (bigChartInstance) {
+                bigChartInstance.destroy();
+                bigChartInstance = null;
+            }
+        }
+
+
+
+        function fetchBigChartData(id, type, period) {
+            let historyUrl;
+            if (type === 'stock') {
+                historyUrl = `/api/stock/${id}?period=${period}`;
+            } else {
+                historyUrl = `/api/crypto/history/${id}?period=${period}`;
+            }
+
+            fetch(historyUrl)
+                .then(response => response.json())
+                .then(data => {
+                    let dates, prices;
+                    if (type === 'stock') {
+                        const series = Array.isArray(data) ? data : (data && data.history ? data.history : []);
+                        dates = series.map(item => new Date(item.Date));
+                        prices = series.map(item => item.Close);
+                    } else {
+                        dates = data.map(item => new Date(item[0]));
+                        prices = data.map(item => item[1]);
+                    }
+
+                    if (bigChartInstance) {
+                        bigChartInstance.data.labels = dates;
+                        bigChartInstance.data.datasets[0].data = prices;
+                        bigChartInstance.update();
+                    } else {
+                        const ctx = document.getElementById('big-chart').getContext('2d');
+                        bigChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: dates,
+                                datasets: [{
+                                    label: `${id} Price`,
+                                    data: prices,
+                                    borderColor: 'rgba(0, 122, 255, 1)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                                    pointRadius: 0
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    x: { type: 'time', time: { unit: 'day' } },
+                                    y: { ticks: { callback: (value) => `$${value.toLocaleString()}` } }
+                                }
+                            }
+                        });
+                    }
+                });
+        }
+
 
         function updateChart(canvasId, labels, data) {
             if (charts[canvasId]) {
@@ -258,6 +392,7 @@
                     <div class="stock-info" id="info-${ticker}">Loading info...</div>
                     <canvas id="chart-${ticker}"></canvas>
                     <div class="last-updated" id="updated-${ticker}"></div>`;
+                chartDiv.onclick = () => showBigChart(ticker, ticker, 'stock');
                 stockContainer.appendChild(chartDiv);
                 fetchStockData(ticker);
             });
@@ -276,10 +411,14 @@
                     </div>
                     <canvas id="chart-${coin.id}"></canvas>
                     <div class="last-updated" id="updated-${coin.id}"></div>`;
+                chartDiv.onclick = () => showBigChart(coin.id, coin.name, 'crypto');
                 cryptoContainer.appendChild(chartDiv);
             });
             fetchCryptoData();
         }
+
+        document.getElementById('back-button').onclick = hideBigChart;
+
 
         function fetchNews() {
             const newsContainer = document.getElementById('news-container');
