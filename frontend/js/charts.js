@@ -10,6 +10,18 @@ const cryptos = [
 ];
 const charts = {};
 let bigChartInstance;
+let usdToEurRate = null;
+
+function formatPriceBoth(value) {
+  const usd = `$${value.toLocaleString()}`;
+  if (!usdToEurRate) return usd;
+  const eur = (value * usdToEurRate);
+  return `${usd} · €${eur.toLocaleString()}`;
+}
+
+function loadFxRate() {
+  return fetch('/api/fx').then(r => r.json()).then(d => { usdToEurRate = d.usdToEur || null; }).catch(() => {});
+}
 
 function createChart(canvasId, labels, data, label, color) {
   const ctx = document.getElementById(canvasId).getContext('2d');
@@ -37,7 +49,7 @@ function fetchStockData(ticker) {
   fetch(`/api/stock/${ticker}`)
     .then(r => r.json())
     .then(data => {
-      document.getElementById(`price-${ticker}`).textContent = `$${data.info.currentPrice.toFixed(2)}`;
+      document.getElementById(`price-${ticker}`).textContent = formatPriceBoth(Number(data.info.currentPrice.toFixed(2)));
       const changeEl = document.getElementById(`change-${ticker}`);
       const change = data.info.change.toFixed(2);
       const changePercent = data.info.changePercent.toFixed(2);
@@ -66,7 +78,7 @@ function fetchCryptoData() {
       cryptos.forEach(coin => {
         if (prices[coin.id]) {
           const priceEl = document.getElementById(`price-${coin.id}`);
-          if (priceEl) priceEl.textContent = `$${prices[coin.id].price.toLocaleString()}`;
+          if (priceEl) priceEl.textContent = formatPriceBoth(prices[coin.id].price);
           const changeEl = document.getElementById(`change-${coin.id}`);
           if (changeEl) {
             const change = prices[coin.id].change.toFixed(2);
@@ -218,7 +230,7 @@ function formatCountdown(ms) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initializeCharts();
+  loadFxRate().then(initializeCharts);
   setInterval(updateMarketStatus, 1000);
   updateMarketStatus();
   document.getElementById('back-button').onclick = hideBigChart;

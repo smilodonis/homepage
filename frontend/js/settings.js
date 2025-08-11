@@ -56,19 +56,14 @@ function renderList(containerId, items, type) {
       nWrap.appendChild(el('span', 'field-label', 'Company Name'));
       const n = el('input'); n.placeholder = 'e.g., Acme Inc.'; n.value = item.name || '';
       nWrap.appendChild(n);
-      const spWrap = el('label', 'field');
-      spWrap.appendChild(el('span', 'field-label', 'Stake %'));
-      const sp = el('input'); sp.type = 'number'; sp.placeholder = 'e.g., 1.2'; sp.value = item.stakePercent || 0;
-      spWrap.appendChild(sp);
       const valWrap = el('label', 'field');
-      valWrap.appendChild(el('span', 'field-label', 'Latest Round Valuation (USD)'));
-      const val = el('input'); val.type = 'number'; val.placeholder = 'e.g., 50000000'; val.value = item.latestRoundValuationUSD || 0;
+      valWrap.appendChild(el('span', 'field-label', 'Invested Amount (USD)'));
+      const val = el('input'); val.type = 'number'; val.placeholder = 'e.g., 50000'; val.value = item.investedUSD || 0;
       valWrap.appendChild(val);
       const rem = el('button', 'remove-btn'); rem.textContent = 'Remove'; rem.onclick = () => { portfolio.companies.splice(idx,1); renderAll(); };
-      row.append(nWrap,spWrap,valWrap,rem);
+      row.append(nWrap,valWrap,rem);
       n.oninput = () => item.name = n.value;
-      sp.oninput = () => item.stakePercent = parseFloat(sp.value || 0);
-      val.oninput = () => item.latestRoundValuationUSD = parseFloat(val.value || 0);
+      val.oninput = () => item.investedUSD = parseFloat(val.value || 0);
     } else if (type === 'other') {
       row = el('div', 'grid simple');
       const nWrap = el('label', 'field');

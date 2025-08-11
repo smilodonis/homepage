@@ -23,8 +23,8 @@ DEFAULT_PORTFOLIO = {
         { "symbol": "ETH", "units": 2.5, "costBasis": 1500 }
     ],
     "companies": [
-        { "name": "Acme Startup", "stakePercent": 1.2, "latestRoundValuationUSD": 50000000, "valueHistory": [] },
-        { "name": "Beta Holdings", "stakePercent": 0.8, "latestRoundValuationUSD": 120000000, "valueHistory": [] }
+        { "name": "Acme Startup", "investedUSD": 50000 },
+        { "name": "Beta Holdings", "investedUSD": 75000 }
     ],
     "other": [
         { "name": "Savings Account", "latestValuationUSD": 25000, "valueHistory": [] },
@@ -75,6 +75,20 @@ def styles_file():
 @app.route('/js/<path:filename>')
 def js_files(filename):
     return send_from_directory(app.static_folder + '/js', filename)
+
+@app.route('/api/fx')
+def get_fx():
+    try:
+        # Use Frankfurter API for a simple USD->EUR rate
+        resp = requests.get('https://api.frankfurter.app/latest?from=USD&to=EUR', timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        rate = (data.get('rates') or {}).get('EUR')
+        if rate is None:
+            return jsonify({ 'usdToEur': None, 'error': 'EUR rate missing from provider' }), 502
+        return jsonify({ 'usdToEur': rate })
+    except Exception as e:
+        return jsonify({ 'usdToEur': None, 'error': str(e) }), 502
 
 def _ensure_portfolio_file():
     os.makedirs(DATA_DIR, exist_ok=True)

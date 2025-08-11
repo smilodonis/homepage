@@ -3,6 +3,7 @@ let portfolio = { stocks: [], cryptos: [], companies: [], other: [] };
 
 let networthChart;
 let allocationChart;
+let usdToEurRate = null;
 const portfolioState = {
   days: 90,
   include: { stocks: true, crypto: true, companies: true, other: true },
@@ -12,6 +13,15 @@ const portfolioState = {
 };
 
 function formatUSD(v) { return `$${(v || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}`; }
+function formatBoth(v) {
+  const usd = formatUSD(v);
+  if (!usdToEurRate) return usd;
+  const eur = (v || 0) * usdToEurRate;
+  return `${usd} · €${eur.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+}
+async function loadFxRate() {
+  try { const r = await fetch('/api/fx'); const d = await r.json(); usdToEurRate = d.usdToEur || null; } catch {}
+}
 
 async function fetchPortfolioData() {
   // ensure holdings loaded
@@ -57,7 +67,7 @@ function computeCurrentValues() {
   let stocksVal = 0, cryptoVal = 0, companiesVal = 0, otherVal = 0;
   portfolio.stocks.forEach(s => { const p = portfolioState.currentPrices.stocks[s.ticker] || 0; stocksVal += p * s.shares; });
   portfolio.cryptos.forEach(c => { const p = portfolioState.currentPrices.crypto[c.symbol] || 0; cryptoVal += p * c.units; });
-  portfolio.companies.forEach(co => { const last = co.valueHistory[co.valueHistory.length-1]?.[1] || 0; companiesVal += last; });
+  portfolio.companies.forEach(co => { companiesVal += Number(co.investedUSD || 0); });
   portfolio.other.forEach(o => { const last = o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0; otherVal += last; });
   return { stocksVal, cryptoVal, companiesVal, otherVal, total: stocksVal + cryptoVal + companiesVal + otherVal };
 }
@@ -72,7 +82,7 @@ function computeDailySeries(days) {
     const k = dayKey(d); let sv = 0, cv = 0, pv = 0, ov = 0;
     if (portfolioState.include.stocks) { portfolio.stocks.forEach(s => { const px = stockMaps[s.ticker][k]; sv += (px !== undefined ? px : 0) * s.shares; }); if (sv === 0 && lastStockVal) sv = lastStockVal; }
     if (portfolioState.include.crypto) { portfolio.cryptos.forEach(c => { const px = cryptoMaps[c.symbol][k]; cv += (px !== undefined ? px : 0) * c.units; }); if (cv === 0 && lastCryptoVal) cv = lastCryptoVal; }
-    if (portfolioState.include.companies) { portfolio.companies.forEach(co => { let val = 0; for (let i=0;i<co.valueHistory.length;i++) { if (co.valueHistory[i][0] <= d.getTime()) val = co.valueHistory[i][1]; else break; } pv += val; }); if (pv === 0 && lastCompaniesVal) pv = lastCompaniesVal; }
+    if (portfolioState.include.companies) { portfolio.companies.forEach(co => { pv += Number(co.investedUSD || 0); }); if (pv === 0 && lastCompaniesVal) pv = lastCompaniesVal; }
     if (portfolioState.include.other) { portfolio.other.forEach(o => { let val = 0; for (let i=0;i<o.valueHistory.length;i++) { if (o.valueHistory[i][0] <= d.getTime()) val = o.valueHistory[i][1]; else break; } ov += val || 0; }); if (ov === 0 && lastOtherVal) ov = lastOtherVal; }
     const total = sv + cv + pv + ov; series.push([d, total, sv, cv, pv, ov]);
     lastStockVal = sv || lastStockVal; lastCryptoVal = cv || lastCryptoVal; lastCompaniesVal = pv || lastCompaniesVal; lastOtherVal = ov || lastOtherVal;
@@ -88,7 +98,7 @@ function renderTables() {
     const value = price * s.shares;
     const pl = (price - s.costBasis) * s.shares;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${s.ticker}</td><td>${s.shares}</td><td>${formatUSD(price)}</td><td>${formatUSD(value)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${s.ticker}</td><td>${s.shares}</td><td>${formatBoth(price)}</td><td>${formatBoth(value)}</td><td style=\"color:${pl>=0?'#28a745':'#dc3545'}\">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     tbodyS.appendChild(tr);
   });
 
@@ -99,18 +109,16 @@ function renderTables() {
     const value = price * c.units;
     const pl = (price - c.costBasis) * c.units;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.symbol}</td><td>${c.units}</td><td>${formatUSD(price)}</td><td>${formatUSD(value)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${c.symbol}</td><td>${c.units}</td><td>${formatBoth(price)}</td><td>${formatBoth(value)}</td><td style=\"color:${pl>=0?'#28a745':'#dc3545'}\">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     tbodyC.appendChild(tr);
   });
 
   const tbodyP = document.querySelector('#table-companies tbody');
   tbodyP.innerHTML = '';
   portfolio.companies.forEach(co => {
-    const latest = co.valueHistory[co.valueHistory.length-1]?.[1] || 0;
-    const first = co.valueHistory[0]?.[1] || latest;
-    const pl = latest - first;
+    const invested = Number(co.investedUSD || 0);
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${co.name}</td><td>${co.stakePercent}%</td><td>${formatUSD(co.latestRoundValuationUSD)}</td><td>${formatUSD(latest)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${co.name}</td><td colspan=\"2\">Invested</td><td>${formatBoth(invested)}</td><td></td>`;
     tbodyP.appendChild(tr);
   });
 
@@ -121,7 +129,7 @@ function renderTables() {
     const first = o.valueHistory[0]?.[1] || latest;
     const pl = latest - first;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${o.name}</td><td>${formatUSD(o.latestValuationUSD || latest)}</td><td>${formatUSD(latest)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${o.name}</td><td>${formatBoth(o.latestValuationUSD || latest)}</td><td>${formatBoth(latest)}</td><td style=\"color:${pl>=0?'#28a745':'#dc3545'}\">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     tbodyO.appendChild(tr);
   });
 }
@@ -133,14 +141,14 @@ function renderPortfolio() {
   const prev = prevSeries[prevSeries.length-2]?.[1] || last;
   const delta = last - prev;
   const deltaPct = prev ? (delta/prev)*100 : 0;
-  document.getElementById('nw-total').textContent = formatUSD(total);
+  document.getElementById('nw-total').textContent = formatBoth(total);
   const nwDeltaEl = document.getElementById('nw-delta');
   nwDeltaEl.textContent = `${delta>=0?'+':''}${delta.toLocaleString(undefined,{maximumFractionDigits:0})} (${deltaPct.toFixed(2)}%)`;
   nwDeltaEl.className = `delta ${delta>=0?'positive':'negative'}`;
-  document.getElementById('nw-stocks').textContent = formatUSD(stocksVal);
-  document.getElementById('nw-crypto').textContent = formatUSD(cryptoVal);
-  document.getElementById('nw-companies').textContent = formatUSD(companiesVal);
-  document.getElementById('nw-other').textContent = formatUSD(otherVal);
+  document.getElementById('nw-stocks').textContent = formatBoth(stocksVal);
+  document.getElementById('nw-crypto').textContent = formatBoth(cryptoVal);
+  document.getElementById('nw-companies').textContent = formatBoth(companiesVal);
+  document.getElementById('nw-other').textContent = formatBoth(otherVal);
 
   const series = computeDailySeries(portfolioState.days);
   const labels = series.map(s => s[0]);
@@ -176,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('inc-crypto').addEventListener('change', (e) => { portfolioState.include.crypto = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-companies').addEventListener('change', (e) => { portfolioState.include.companies = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-other').addEventListener('change', (e) => { portfolioState.include.other = e.target.checked; renderPortfolio(); });
-  loadHoldings().then(() => fetchPortfolioData().then(renderPortfolio));
+  loadFxRate().then(() => loadHoldings().then(() => fetchPortfolioData().then(renderPortfolio)));
 });
 
 
