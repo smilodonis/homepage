@@ -12,6 +12,7 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .nav a { text-decoration: none; font-size: 1.1em; padding: 10px 20px; color: #333; }
 .nav a.active { color: #007aff; border-bottom: 2px solid #007aff; }
 
+
 #news-container { max-width: 800px; margin: 20px auto; }
 .news-item { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: box-shadow 0.3s ease-in-out; }
 .news-item:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }

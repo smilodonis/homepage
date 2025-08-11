@@ -1,40 +1,5 @@
 // Portfolio dashboard logic extracted
-const portfolio = {
-  stocks: [
-    { ticker: 'AAPL', shares: 20, costBasis: 150 },
-    { ticker: 'NVDA', shares: 6, costBasis: 400 },
-    { ticker: 'MSFT', shares: 8, costBasis: 300 },
-  ],
-  cryptos: [
-    { symbol: 'BTC', units: 0.25, costBasis: 30000 },
-    { symbol: 'ETH', units: 2.5, costBasis: 1500 },
-  ],
-  companies: [
-    { name: 'Acme Startup', stakePercent: 1.2, latestRoundValuationUSD: 50000000, valueHistory: [
-      [new Date().setMonth(new Date().getMonth()-6), 450000],
-      [new Date().setMonth(new Date().getMonth()-3), 520000],
-      [new Date().setMonth(new Date().getMonth()-1), 600000],
-      [Date.now(), 620000],
-    ]},
-    { name: 'Beta Holdings', stakePercent: 0.8, latestRoundValuationUSD: 120000000, valueHistory: [
-      [new Date().setMonth(new Date().getMonth()-6), 700000],
-      [new Date().setMonth(new Date().getMonth()-2), 750000],
-      [Date.now(), 760000],
-    ]}
-  ],
-  other: [
-    { name: 'Savings Account', latestValuationUSD: 25000, valueHistory: [
-      [new Date().setMonth(new Date().getMonth()-6), 20000],
-      [new Date().setMonth(new Date().getMonth()-3), 23000],
-      [Date.now(), 25000],
-    ]},
-    { name: 'Gold ETF', latestValuationUSD: 12000, valueHistory: [
-      [new Date().setMonth(new Date().getMonth()-6), 11000],
-      [new Date().setMonth(new Date().getMonth()-1), 11800],
-      [Date.now(), 12000],
-    ]}
-  ]
-};
+let portfolio = { stocks: [], cryptos: [], companies: [], other: [] };
 
 let networthChart;
 let allocationChart;
@@ -49,6 +14,10 @@ const portfolioState = {
 function formatUSD(v) { return `$${(v || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}`; }
 
 async function fetchPortfolioData() {
+  // ensure holdings loaded
+  if (!portfolio.stocks.length && !portfolio.cryptos.length && !portfolio.companies.length && !portfolio.other.length) {
+    await loadHoldings();
+  }
   await Promise.all(portfolio.stocks.map(async (s) => {
     const res = await fetch(`/api/stock/${s.ticker}?period=1y`);
     const data = await res.json();
@@ -68,6 +37,12 @@ async function fetchPortfolioData() {
     const data = await res.json();
     portfolioState.cryptoHistories[c.symbol] = Array.isArray(data) ? data : [];
   }));
+}
+
+async function loadHoldings() {
+  const res = await fetch('/api/portfolio');
+  const data = await res.json();
+  portfolio = data || { stocks: [], cryptos: [], companies: [], other: [] };
 }
 
 function buildDailyRange(days) {
@@ -201,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('inc-crypto').addEventListener('change', (e) => { portfolioState.include.crypto = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-companies').addEventListener('change', (e) => { portfolioState.include.companies = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-other').addEventListener('change', (e) => { portfolioState.include.other = e.target.checked; renderPortfolio(); });
-  fetchPortfolioData().then(renderPortfolio);
+  loadHoldings().then(() => fetchPortfolioData().then(renderPortfolio));
 });
 
 

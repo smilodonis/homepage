@@ -1,9 +1,36 @@
 from flask import Flask, jsonify, send_from_directory, request
+import os
+import json
 import yfinance as yf
 import requests
 import feedparser
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
+
+# Portfolio storage
+BASE_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+PORTFOLIO_FILE = os.path.join(DATA_DIR, 'portfolio.json')
+
+DEFAULT_PORTFOLIO = {
+    "stocks": [
+        { "ticker": "AAPL", "shares": 20, "costBasis": 150 },
+        { "ticker": "NVDA", "shares": 6, "costBasis": 400 },
+        { "ticker": "MSFT", "shares": 8, "costBasis": 300 }
+    ],
+    "cryptos": [
+        { "symbol": "BTC", "units": 0.25, "costBasis": 30000 },
+        { "symbol": "ETH", "units": 2.5, "costBasis": 1500 }
+    ],
+    "companies": [
+        { "name": "Acme Startup", "stakePercent": 1.2, "latestRoundValuationUSD": 50000000, "valueHistory": [] },
+        { "name": "Beta Holdings", "stakePercent": 0.8, "latestRoundValuationUSD": 120000000, "valueHistory": [] }
+    ],
+    "other": [
+        { "name": "Savings Account", "latestValuationUSD": 25000, "valueHistory": [] },
+        { "name": "Gold ETF", "latestValuationUSD": 12000, "valueHistory": [] }
+    ]
+}
 
 @app.route('/')
 def index():
@@ -20,6 +47,10 @@ def charts_page():
 @app.route('/news')
 def news_page():
     return send_from_directory(app.static_folder, 'news.html')
+
+@app.route('/settings')
+def settings_page():
+    return send_from_directory(app.static_folder, 'settings.html')
 
 @app.route('/api/news')
 def get_news():
@@ -44,6 +75,34 @@ def styles_file():
 @app.route('/js/<path:filename>')
 def js_files(filename):
     return send_from_directory(app.static_folder + '/js', filename)
+
+def _ensure_portfolio_file():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(PORTFOLIO_FILE):
+        with open(PORTFOLIO_FILE, 'w') as f:
+            json.dump(DEFAULT_PORTFOLIO, f)
+
+@app.route('/api/portfolio', methods=['GET', 'POST'])
+def portfolio_api():
+    _ensure_portfolio_file()
+    if request.method == 'GET':
+        with open(PORTFOLIO_FILE, 'r') as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = DEFAULT_PORTFOLIO
+        return jsonify(data)
+    # POST: replace entire portfolio
+    payload = request.get_json(silent=True)
+    if payload is None or not isinstance(payload, dict):
+        return jsonify({"error": "Invalid JSON payload"}), 400
+    # basic shape validation
+    for key in ["stocks", "cryptos", "companies", "other"]:
+        if key not in payload or not isinstance(payload[key], list):
+            return jsonify({"error": f"Missing or invalid '{key}' list"}), 400
+    with open(PORTFOLIO_FILE, 'w') as f:
+        json.dump(payload, f)
+    return jsonify({"status": "ok"})
 
 
 @app.route('/api/stock/<ticker>')
