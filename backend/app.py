@@ -7,7 +7,19 @@ app = Flask(__name__, static_folder='../frontend', static_url_path='/')
 
 @app.route('/')
 def index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(app.static_folder, 'dashboard.html')
+
+@app.route('/dashboard')
+def dashboard_page():
+    return send_from_directory(app.static_folder, 'dashboard.html')
+
+@app.route('/charts')
+def charts_page():
+    return send_from_directory(app.static_folder, 'charts.html')
+
+@app.route('/news')
+def news_page():
+    return send_from_directory(app.static_folder, 'news.html')
 
 @app.route('/api/news')
 def get_news():
@@ -24,6 +36,14 @@ def get_news():
     
     all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
     return jsonify(all_entries)
+
+@app.route('/styles.css')
+def styles_file():
+    return send_from_directory(app.static_folder, 'styles.css')
+
+@app.route('/js/<path:filename>')
+def js_files(filename):
+    return send_from_directory(app.static_folder + '/js', filename)
 
 
 @app.route('/api/stock/<ticker>')

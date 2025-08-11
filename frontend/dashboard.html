@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.23.0/cdn.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <div class="nav">
+    <a class="active" href="/dashboard">Dashboard</a>
+    <a href="/charts">Charts</a>
+    <a href="/news">News</a>
+  </div>
+
+  <div class="page active">
+    <h1>Dashboard</h1>
+    <div class="portfolio">
+      <div class="cards">
+        <div class="card"><h4>Total Net Worth</h4><div class="value" id="nw-total">-</div><div class="delta" id="nw-delta"></div></div>
+        <div class="card"><h4>Stocks Value</h4><div class="value" id="nw-stocks">-</div><div class="delta" id="nw-stocks-delta"></div></div>
+        <div class="card"><h4>Crypto Value</h4><div class="value" id="nw-crypto">-</div><div class="delta" id="nw-crypto-delta"></div></div>
+        <div class="card"><h4>Private Companies</h4><div class="value" id="nw-companies">-</div><div class="delta" id="nw-companies-delta"></div></div>
+        <div class="card"><h4>Other</h4><div class="value" id="nw-other">-</div><div class="delta" id="nw-other-delta"></div></div>
+      </div>
+      <div class="portfolio-controls">
+        <div class="left">
+          <label><input type="checkbox" id="inc-stocks" checked /> Stocks</label>
+          <label><input type="checkbox" id="inc-crypto" checked /> Crypto</label>
+          <label><input type="checkbox" id="inc-companies" checked /> Companies</label>
+          <label><input type="checkbox" id="inc-other" checked /> Other</label>
+        </div>
+        <div class="right">
+          <button class="tf-btn" data-days="30">1M</button>
+          <button class="tf-btn active" data-days="90">3M</button>
+          <button class="tf-btn" data-days="180">6M</button>
+          <button class="tf-btn" data-days="365">1Y</button>
+        </div>
+      </div>
+      <div class="portfolio-charts">
+        <div class="card"><h4 class="section-title">Net Worth Over Time</h4><canvas id="networth-chart"></canvas></div>
+        <div class="card"><h4 class="section-title">Allocation</h4><canvas id="allocation-chart"></canvas></div>
+      </div>
+
+      <h2 class="section-title">Holdings</h2>
+      <h3>Stocks</h3>
+      <table class="table" id="table-stocks">
+        <thead><tr><th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th><th>P/L</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3>Crypto</h3>
+      <table class="table" id="table-crypto">
+        <thead><tr><th>Symbol</th><th>Units</th><th>Price</th><th>Value</th><th>P/L</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3>Companies</h3>
+      <table class="table" id="table-companies">
+        <thead><tr><th>Name</th><th>Stake</th><th>Latest Valuation</th><th>Value</th><th>P/L</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3>Other</h3>
+      <table class="table" id="table-other">
+        <thead><tr><th>Name</th><th>Latest Valuation</th><th>Value</th><th>P/L</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
+
+

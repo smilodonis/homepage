@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Charts</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.23.0/cdn.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <div class="nav">
+    <a href="/dashboard">Dashboard</a>
+    <a class="active" href="/charts">Charts</a>
+    <a href="/news">News</a>
+  </div>
+
+  <div class="page active">
+    <h1>Charts</h1>
+    <div class="dashboard-content">
+      <h2>Stock Market <span id="market-status" class="market-status"></span></h2>
+      <div id="stock-charts" class="charts-grid"></div>
+      <h2>Cryptocurrency</h2>
+      <div id="crypto-charts" class="charts-grid"></div>
+    </div>
+    <div id="big-chart-container" class="big-chart-container" style="display:none;">
+      <button id="back-button" class="back-button">← Back to all charts</button>
+      <h2 id="big-chart-title"></h2>
+      <div class="timeframe-controls">
+        <button class="timeframe-button" data-period="7d">7D</button>
+        <button class="timeframe-button" data-period="1mo">1M</button>
+        <button class="timeframe-button active" data-period="6mo">6M</button>
+        <button class="timeframe-button" data-period="1y">1Y</button>
+        <button class="timeframe-button" data-period="max">Max</button>
+      </div>
+      <canvas id="big-chart"></canvas>
+    </div>
+  </div>
+
+  <script src="/js/charts.js"></script>
+</body>
+</html>
+
+
