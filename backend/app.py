@@ -120,11 +120,53 @@ def get_weather():
     if api_key == 'YOUR_API_KEY_HERE':
         return jsonify({"error": "API key for OpenWeatherMap is not configured."}), 500
 
-    url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly&appid={api_key}&units=metric"
+    forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
     try:
-        response = requests.get(url)
+        response = requests.get(forecast_url)
         response.raise_for_status()
-        return jsonify(response.json())
+        forecast_data = response.json()
+
+        # Use the first forecast item as "current" weather
+        current_forecast = forecast_data['list'][0]
+        current_weather = {
+            'temp': current_forecast['main']['temp'],
+            'weather': current_forecast['weather'],
+            'wind_speed': current_forecast['wind']['speed'],
+            'wind_deg': current_forecast['wind']['deg']
+        }
+
+        # Process the list into daily summaries
+        daily_forecasts = {}
+        for item in forecast_data['list']:
+            date = item['dt_txt'].split(' ')[0]
+            if date not in daily_forecasts:
+                daily_forecasts[date] = []
+            daily_forecasts[date].append(item)
+
+        processed_daily = []
+        for date, items in daily_forecasts.items():
+            max_temp = max(item['main']['temp_max'] for item in items)
+            min_temp = min(item['main']['temp_min'] for item in items)
+            icons = [item['weather'][0]['icon'] for item in items]
+            most_common_icon = max(set(icons), key=icons.count)
+            main_weather = next(item['weather'][0] for item in items if item['weather'][0]['icon'] == most_common_icon)
+            max_pop = max(item.get('pop', 0) for item in items)
+            max_wind = max(item['wind']['speed'] for item in items)
+
+            processed_daily.append({
+                'dt': items[0]['dt'],
+                'temp': {'day': max_temp, 'min': min_temp},
+                'weather': [main_weather],
+                'pop': max_pop,
+                'wind_speed': max_wind,
+            })
+        
+        final_data = {
+            'current': current_weather,
+            'daily': processed_daily
+        }
+        return jsonify(final_data)
+        
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 

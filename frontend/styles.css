@@ -31,12 +31,16 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .news-item p { color: #555; line-height: 1.6; margin-bottom: 15px; }
 .news-item small { font-size: 0.85em; color: #888; }
 
-.weather-container { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; max-width: 1400px; margin: 0 auto; padding: 20px; }
-.current-weather, .forecast, .radar-map { background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+/* Weather Page */
+.weather-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1400px; margin: 0 auto; padding: 20px; }
+.current-weather-card { display: flex; align-items: center; justify-content: space-around; background-color: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); grid-column: 1 / -1; }
+.current-temp { font-size: 4em; font-weight: 300; }
+.current-details { text-align: left; }
+.forecast-card-new { display: flex; justify-content: space-between; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); grid-column: 1 / -1; }
+.forecast-day-compact { text-align: center; }
+.forecast-day-compact i { font-size: 2.5em; }
+.wind-chart-container { grid-column: 1 / -1; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 .radar-map { grid-column: 1 / -1; }
-.forecast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; }
-.forecast-day { text-align: center; }
-.forecast-day img { width: 50px; height: 50px; }
 
 .price-info { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin-bottom: 10px; }
 .daily-change { font-size: 0.9em; font-weight: bold; }

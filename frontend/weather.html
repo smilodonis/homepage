@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weather</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 </head>
 <body>
   <div class="nav">
@@ -18,15 +21,15 @@
   <div class="page active">
     <h1>Weather Forecast - Bratislava</h1>
     <div class="weather-container">
-      <div class="current-weather">
-        <h2>Current Weather</h2>
-        <div id="current-weather-data"></div>
+      <div id="current-weather" class="current-weather-card">
+        <!-- Current weather will be injected here -->
       </div>
-      <div class="forecast">
-        <h2>3-Day Forecast</h2>
-        <div id="3-day-forecast" class="forecast-grid"></div>
-        <h2>7-Day Forecast</h2>
-        <div id="7-day-forecast" class="forecast-grid"></div>
+      <div id="forecast-container" class="forecast-card-new">
+        <!-- Forecast will be injected here -->
+      </div>
+      <div class="wind-chart-container">
+        <h2>Wind Speed & Direction</h2>
+        <canvas id="wind-chart"></canvas>
       </div>
       <div class="radar-map">
         <h2>Radar Map</h2>
