@@ -4,6 +4,7 @@ import json
 import yfinance as yf
 import requests
 import feedparser
+import pandas as pd
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
 
@@ -123,35 +124,42 @@ def portfolio_api():
 
 @app.route('/api/stock/<ticker>')
 def get_stock_data(ticker):
-    period = request.args.get('period', '6mo')
+    period = request.args.get('period', '1y')
     stock = yf.Ticker(ticker)
     hist = stock.history(period=period)
+    info = stock.info
+
+    # Calculate TTM dividends
+    dividends = stock.dividends
+    now = pd.Timestamp.now(tz='UTC')
+    ttm_dividends = dividends[dividends.index > now - pd.DateOffset(years=1)]
+    annual_dividend = ttm_dividends.sum()
+
+    # Temp debug to see what keys are in info
+    print(f"Dividends for {ticker}: {stock.dividends}")
     
-    # For the main chart view, we need more info
-    if period == '6mo':
-        info = stock.info
-        previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
-        current_price = info.get('currentPrice') or info.get('previousClose')
-        change = current_price - previous_close
-        change_percent = (change / previous_close) * 100 if previous_close else 0
-        data = {
-            'history': hist.reset_index().to_dict(orient='records'),
-            'info': {
-                'shortName': info.get('shortName'),
-                'symbol': info.get('symbol'),
-                'sector': info.get('sector'),
-                'country': info.get('country'),
-                'marketCap': info.get('marketCap'),
-                'trailingPE': info.get('trailingPE'),
-                'currentPrice': current_price,
-                'change': change,
-                'changePercent': change_percent
-            }
+    previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
+    current_price = info.get('currentPrice') or info.get('previousClose')
+    change = current_price - previous_close
+    change_percent = (change / previous_close) * 100 if previous_close else 0
+    
+    data = {
+        'history': hist.reset_index().to_dict(orient='records'),
+        'info': {
+            'shortName': info.get('shortName'),
+            'symbol': info.get('symbol'),
+            'sector': info.get('sector'),
+            'country': info.get('country'),
+            'marketCap': info.get('marketCap'),
+            'trailingPE': info.get('trailingPE'),
+            'currentPrice': current_price,
+            'change': change,
+            'changePercent': change_percent,
+            'dividendYield': info.get('dividendYield'),
+            'annualDividend': annual_dividend
         }
-        return jsonify(data)
-    else:
-        # For the big chart, just send the history
-        return jsonify(hist.reset_index().to_dict(orient='records'))
+    }
+    return jsonify(data)
 
 @app.route('/api/crypto/prices')
 def get_crypto_prices():

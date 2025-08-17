@@ -33,7 +33,10 @@ async function fetchPortfolioData() {
     const data = await res.json();
     const hist = (Array.isArray(data) ? data : data.history) || [];
     portfolioState.stockHistories[s.ticker] = hist.map(it => ({ date: new Date(it.Date), close: it.Close }));
-    if (!Array.isArray(data)) portfolioState.currentPrices.stocks[s.ticker] = data.info.currentPrice;
+    if (!Array.isArray(data)) {
+      portfolioState.currentPrices.stocks[s.ticker] = data.info.currentPrice;
+      s.annualDividend = data.info.annualDividend;
+    }
     else if (hist.length) portfolioState.currentPrices.stocks[s.ticker] = hist[hist.length-1].Close;
   }));
 
@@ -100,8 +103,9 @@ function renderTables() {
     const price = portfolioState.currentPrices.stocks[s.ticker] || 0;
     const value = price * s.shares;
     const pl = (price - s.costBasis) * s.shares;
+    const monthlyDividend = (s.annualDividend || 0) * s.shares / 12;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${s.ticker}</td><td>${s.shares}</td><td>${formatBoth(price)}</td><td>${formatBoth(value)}</td><td style=\"color:${pl>=0?'#28a745':'#dc3545'}\">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${s.ticker}</td><td>${s.shares}</td><td>${formatBoth(price)}</td><td>${formatBoth(value)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td>${formatBoth(monthlyDividend)}</td>`;
     tbodyS.appendChild(tr);
   });
 
