@@ -45,7 +45,7 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .forecast-card-new { display: flex; justify-content: space-between; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); grid-column: 1 / -1; }
 .forecast-day-compact { text-align: center; }
 .forecast-day-compact i { font-size: 2.5em; }
-.wind-chart-container { grid-column: 1 / -1; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.wind-chart-container { grid-column: 1 / -1; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-height: 350px; }
 .radar-map { grid-column: 1 / -1; }
 
 .price-info { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin-bottom: 10px; }
@@ -53,12 +53,28 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .positive { color: #28a745; }
 .negative { color: #dc3545; }
 
-.big-chart-container { position: relative; margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 80%; }
-.close-button { position: absolute; top: 10px; right: 15px; font-size: 2.5em; font-weight: bold; color: #aaa; cursor: pointer; line-height: 0.5; }
-.close-button:hover { color: #333; }
+.big-chart-container {
+  display: none;
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin: 30px auto;
+  width: 80%;
+  min-height: 500px;
+}
+.close-button { float: right; font-size: 2em; cursor: pointer; line-height: 1; }
 .timeframe-controls { text-align: center; margin-bottom: 15px; }
 .timeframe-button { background-color: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; padding: 8px 15px; margin: 0 5px; cursor: pointer; }
 .timeframe-button.active { background-color: #007aff; color: #fff; border-color: #007aff; }
+
+.chart-type-controls { text-align: center; margin-bottom: 15px; }
+.chart-type-button { background-color: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; padding: 8px 15px; margin: 0 5px; cursor: pointer; }
+.chart-type-button.active { background-color: #007aff; color: #fff; border-color: #007aff; }
+
+.indicator-controls { text-align: center; margin-bottom: 15px; }
+.indicator-toggle-button { background-color: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; padding: 8px 15px; margin: 0 5px; cursor: pointer; }
+.indicator-toggle-button[data-enabled="true"] { background-color: #007aff; color: #fff; border-color: #007aff; }
 
 /* Portfolio Dashboard */
 .portfolio { max-width: 1200px; margin: 0 auto; padding: 20px; }

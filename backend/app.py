@@ -229,39 +229,61 @@ def portfolio_api():
 
 @app.route('/api/stock/<ticker>')
 def get_stock_data(ticker):
-    period = request.args.get('period', '1y')
-    stock = yf.Ticker(ticker)
-    hist = stock.history(period=period)
-    info = stock.info
+    try:
+        period = request.args.get('period', '1y')
+        interval = '1d'
+        if period == '1d':
+            interval = '1m'
+        elif period == '1wk':
+            period = '5d'
+            interval = '5m'
+        elif period == '1mo':
+            period = '1mo'
+            interval = '30m'
 
-    # Calculate TTM dividends
-    dividends = stock.dividends
-    now = pd.Timestamp.now(tz='UTC')
-    ttm_dividends = dividends[dividends.index > now - pd.DateOffset(years=1)]
-    annual_dividend = ttm_dividends.sum()
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=period, interval=interval)
+        info = stock.info
 
-    previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
-    current_price = info.get('currentPrice') or info.get('previousClose')
-    change = current_price - previous_close
-    change_percent = (change / previous_close) * 100 if previous_close else 0
-    
-    data = {
-        'history': hist.reset_index().to_dict(orient='records'),
-        'info': {
-            'shortName': info.get('shortName'),
-            'symbol': info.get('symbol'),
-            'sector': info.get('sector'),
-            'country': info.get('country'),
-            'marketCap': info.get('marketCap'),
-            'trailingPE': info.get('trailingPE'),
-            'currentPrice': current_price,
-            'change': change,
-            'changePercent': change_percent,
-            'dividendYield': info.get('dividendYield'),
-            'annualDividend': annual_dividend
+        # Calculate TTM dividends
+        dividends = stock.dividends
+        now = pd.Timestamp.now(tz='UTC')
+        ttm_dividends = dividends[dividends.index > now - pd.DateOffset(years=1)]
+        annual_dividend = ttm_dividends.sum()
+
+        if hist.empty or not info:
+            return jsonify({"error": "Failed to fetch data for ticker"}), 404
+
+        previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
+        current_price = info.get('currentPrice') or info.get('previousClose')
+        change = current_price - previous_close
+        change_percent = (change / previous_close) * 100 if previous_close else 0
+        
+        hist_records = hist.reset_index().to_dict(orient='records')
+        for record in hist_records:
+            # yfinance returns 'Datetime' for intraday and 'Date' for daily
+            date_key = 'Datetime' if 'Datetime' in record else 'Date'
+            record['Date'] = record[date_key].strftime('%Y-%m-%dT%H:%M:%S')
+
+        data = {
+            'history': hist_records,
+            'info': {
+                'shortName': info.get('shortName'),
+                'symbol': info.get('symbol'),
+                'sector': info.get('sector'),
+                'country': info.get('country'),
+                'marketCap': info.get('marketCap'),
+                'trailingPE': info.get('trailingPE'),
+                'currentPrice': current_price,
+                'change': change,
+                'changePercent': change_percent,
+                'dividendYield': info.get('dividendYield'),
+                'annualDividend': annual_dividend
+            }
         }
-    }
-    return jsonify(data)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/crypto/prices')
 def get_crypto_prices():
@@ -285,15 +307,27 @@ def get_crypto_prices():
 @app.route('/api/crypto/history/<coin>')
 def get_crypto_history(coin):
     period = request.args.get('period', '6mo')
-    limit_map = {'7d': 7, '1mo': 30, '6mo': 180, '1y': 365, 'max': 2000}
+    limit_map = {'1d': 1440, '1wk': 2016, '1mo': 720, '6mo': 180, '1y': 365, 'max': 2000}
     limit = limit_map.get(period, 180)
     
     url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={coin}&tsym=USD&limit={limit}"
+    if period in ['1d', '1wk']:
+        url = f"https://min-api.cryptocompare.com/data/v2/histominute?fsym={coin}&tsym=USD&limit={limit}"
+    elif period == '1mo':
+        url = f"https://min-api.cryptocompare.com/data/v2/hourly?fsym={coin}&tsym=USD&limit={limit}"
+    
     response = requests.get(url)
     try:
         data = response.json()
         if 'Data' in data and 'Data' in data['Data']:
-            prices = [[item['time'] * 1000, item['close']] for item in data['Data']['Data']]
+            prices = [{
+                "time": item['time'] * 1000,
+                "open": item['open'],
+                "high": item['high'],
+                "low": item['low'],
+                "close": item['close'],
+                "volumefrom": item['volumefrom']
+            } for item in data['Data']['Data']]
             return jsonify(prices)
     except (requests.exceptions.JSONDecodeError, KeyError):
         return jsonify([])

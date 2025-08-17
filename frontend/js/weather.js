@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }]
         },
         options: {
+          maintainAspectRatio: false,
           scales: {
             y: {
               beginAtZero: true
@@ -69,6 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     content: 'Safe Wind Speeds',
                     enabled: true,
                     position: 'end'
+                  }
+                },
+                line2: {
+                  type: 'line',
+                  yMin: 15,
+                  yMax: 15,
+                  borderColor: 'rgb(40, 167, 69)',
+                  borderWidth: 2,
+                  label: {
+                    content: 'Optimal Wind Speeds',
+                    enabled: true,
+                    position: 'start'
                   }
                 }
               }

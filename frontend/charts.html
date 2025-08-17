@@ -31,16 +31,31 @@
       <span id="close-button" class="close-button">&times;</span>
       <h2 id="big-chart-title"></h2>
       <div class="timeframe-controls">
-        <button class="timeframe-button" data-period="7d">7D</button>
-        <button class="timeframe-button" data-period="1mo">1M</button>
-        <button class="timeframe-button active" data-period="6mo">6M</button>
-        <button class="timeframe-button" data-period="1y">1Y</button>
-        <button class="timeframe-button" data-period="max">Max</button>
+        <button type="button" class="timeframe-button" data-period="1d">1D</button>
+        <button type="button" class="timeframe-button" data-period="1wk">1W</button>
+        <button type="button" class="timeframe-button" data-period="1mo">1M</button>
+        <button type="button" class="timeframe-button active" data-period="6mo">6M</button>
+        <button type="button" class="timeframe-button" data-period="1y">1Y</button>
+        <button type="button" class="timeframe-button" data-period="max">Max</button>
       </div>
+      <div class="chart-type-controls">
+        <button type="button" class="chart-type-button active" data-chart-type="line">Line</button>
+        <button type="button" class="chart-type-button" data-chart-type="candlestick">Candlestick</button>
+      </div>
+      <div class="indicator-controls">
+        <button type="button" class="indicator-toggle-button" data-indicator="sma" data-enabled="true">SMA</button>
+        <button type="button" class="indicator-toggle-button" data-indicator="volume" data-enabled="true">Volume</button>
+        <button type="button" class="indicator-toggle-button" data-indicator="macd" data-enabled="true">MACD</button>
+        <button type="button" class="indicator-toggle-button" data-indicator="rsi" data-enabled="true">RSI</button>
+    </div>
       <canvas id="big-chart"></canvas>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.0/dist/chartjs-chart-financial.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="/js/charts.js"></script>
 </body>
 </html>
