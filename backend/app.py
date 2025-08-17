@@ -84,7 +84,7 @@ def get_finance_news():
                 entry['category'] = category
                 all_entries.append(entry)
     
-    all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
+    all_entries.sort(key=lambda x: x.get('published_parsed', (0,0,0,0,0,0)), reverse=True)
     return jsonify(all_entries)
 
 @app.route('/api/global-news')
@@ -92,12 +92,18 @@ def get_global_news():
     feeds = {
         "US News": [
             ("NPR", "https://feeds.npr.org/1003/rss.xml"),
+            ("Associated Press", "https://rsshub.app/ap/topics/us-news"),
+            ("Reuters", "https://www.reuters.com/news/us/rss")
         ],
         "EU News": [
             ("BBC", "http://feeds.bbci.co.uk/news/world/europe/rss.xml"),
+            ("Euronews", "https://www.euronews.com/rss?format=mrss&level=vertical&name=news&page=1"),
+            ("Politico EU", "https://rss.politico.eu/feeds/all.xml")
         ],
         "World News": [
             ("BBC", "http://feeds.bbci.co.uk/news/world/rss.xml"),
+            ("Al Jazeera", "https://www.aljazeera.com/xml/rss/all.xml"),
+            ("The Guardian", "https://www.theguardian.com/world/rss")
         ]
     }
     all_entries = []
@@ -109,7 +115,7 @@ def get_global_news():
                 entry['category'] = category
                 all_entries.append(entry)
     
-    all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
+    all_entries.sort(key=lambda x: x.get('published_parsed', (0,0,0,0,0,0)), reverse=True)
     return jsonify(all_entries)
 
 @app.route('/api/weather')

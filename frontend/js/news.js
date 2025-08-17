@@ -14,12 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       for (const category in categories) {
         const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'news-category-container';
+        categoryContainer.className = 'global-category-container';
         const categoryTitle = document.createElement('h2');
         categoryTitle.textContent = category;
         categoryContainer.appendChild(categoryTitle);
         const articlesGrid = document.createElement('div');
-        articlesGrid.className = 'news-grid';
+        articlesGrid.className = 'global-articles-grid';
         
         categories[category].forEach(item => {
           const newsDiv = document.createElement('div');
@@ -29,8 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const link = item.link || '#';
           const source = item.source || 'Unknown Source';
           const published = item.published ? new Date(item.published).toLocaleString() : 'No Date';
+          const thumbnail = (item.media_content && item.media_content.length > 0) ? item.media_content[0].url : '';
 
           newsDiv.innerHTML = `
+            ${thumbnail ? `<a href="${link}" target="_blank"><img src="${thumbnail}" class="news-thumbnail"></a>` : ''}
             <div class="news-content">
               <h3><a href="${link}" target="_blank">${title}</a></h3>
               <p>${summary}</p>
