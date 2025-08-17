@@ -153,17 +153,67 @@ function fetchBigChartData(id, type, period) {
       let ohlcData, volumeData;
       if (type === 'stock') {
         const series = Array.isArray(data) ? data : (data && data.history ? data.history : []);
-        ohlcData = series.map(item => ({
-          x: new Date(item.Date),
-          o: item.Open,
-          h: item.High,
-          l: item.Low,
-          c: item.Close
-        }));
-        volumeData = series.map(item => ({
-          x: new Date(item.Date),
-          y: item.Volume
-        }));
+
+        if (['1d', '1wk', '1mo'].includes(period) && series.length > 0) {
+            const groupedByDay = series.reduce((acc, item) => {
+                const day = new Date(item.Date).toDateString();
+                if (!acc[day]) {
+                    acc[day] = [];
+                }
+                acc[day].push(item);
+                return acc;
+            }, {});
+
+            ohlcData = [];
+            volumeData = [];
+            let dayOffset = 0;
+            const sortedDays = Object.keys(groupedByDay).sort((a, b) => new Date(a) - new Date(b));
+            const syntheticStartDate = new Date(sortedDays[0]);
+            syntheticStartDate.setHours(0, 0, 0, 0);
+
+            for (const day of sortedDays) {
+                const daySeries = groupedByDay[day];
+                const firstTimestamp = new Date(daySeries[0].Date).getTime();
+                const lastTimestamp = new Date(daySeries[daySeries.length - 1].Date).getTime();
+                const tradingDuration = lastTimestamp - firstTimestamp;
+
+                const stretchedDayData = daySeries.map(item => {
+                    const originalTimestamp = new Date(item.Date).getTime();
+                    const percentageOfDay = tradingDuration > 0 ? (originalTimestamp - firstTimestamp) / tradingDuration : 0;
+                    const newTimestamp = syntheticStartDate.getTime() + (dayOffset * 24 * 60 * 60 * 1000) + (percentageOfDay * (24 * 60 * 60 * 1000));
+                    
+                    return {
+                        ohlc: {
+                            x: new Date(newTimestamp),
+                            o: item.Open,
+                            h: item.High,
+                            l: item.Low,
+                            c: item.Close
+                        },
+                        volume: {
+                            x: new Date(newTimestamp),
+                            y: item.Volume
+                        }
+                    };
+                });
+                
+                ohlcData.push(...stretchedDayData.map(d => d.ohlc));
+                volumeData.push(...stretchedDayData.map(d => d.volume));
+                dayOffset++;
+            }
+        } else {
+            ohlcData = series.map(item => ({
+                x: new Date(item.Date),
+                o: item.Open,
+                h: item.High,
+                l: item.Low,
+                c: item.Close
+            }));
+            volumeData = series.map(item => ({
+              x: new Date(item.Date),
+              y: item.Volume
+            }));
+        }
       } else {
         ohlcData = data.map(item => ({
           x: new Date(item.time),

@@ -254,8 +254,12 @@ def get_stock_data(ticker):
         if hist.empty or not info:
             return jsonify({"error": "Failed to fetch data for ticker"}), 404
 
-        previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
-        current_price = info.get('currentPrice') or info.get('previousClose')
+        # Correctly determine previous close for change calculation
+        previous_close = info.get('previousClose', 0)
+        if not previous_close and len(hist['Close']) > 1:
+             previous_close = hist['Close'].iloc[-2]
+
+        current_price = info.get('currentPrice') or info.get('regularMarketPrice') or hist['Close'].iloc[-1]
         change = current_price - previous_close
         change_percent = (change / previous_close) * 100 if previous_close else 0
         
@@ -278,7 +282,8 @@ def get_stock_data(ticker):
                 'change': change,
                 'changePercent': change_percent,
                 'dividendYield': info.get('dividendYield'),
-                'annualDividend': annual_dividend
+                'annualDividend': annual_dividend,
+                'previousDayClose': info.get('previousClose')
             }
         }
         return jsonify(data)
