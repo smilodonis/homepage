@@ -45,6 +45,10 @@ def dashboard_page():
 def charts_page():
     return send_from_directory(app.static_folder, 'charts.html')
 
+@app.route('/finance-news')
+def finance_news_page():
+    return send_from_directory(app.static_folder, 'finance-news.html')
+
 @app.route('/news')
 def news_page():
     return send_from_directory(app.static_folder, 'news.html')
@@ -53,20 +57,53 @@ def news_page():
 def settings_page():
     return send_from_directory(app.static_folder, 'settings.html')
 
-@app.route('/api/news')
-def get_news():
+@app.route('/api/finance-news')
+def get_finance_news():
     feeds = {
-        "Reuters": "https://www.reuters.com/markets/us/rss",
-        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories",
-        "Wall Street Journal": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
-        "StockTitan": "https://www.stocktitan.net/rss"
+        "Wall Street": [
+            ("Reuters", "https://www.reuters.com/markets/us/rss"),
+            ("Yahoo Finance", "https://finance.yahoo.com/rss/topstories"),
+            ("Wall Street Journal", "https://feeds.a.dj.com/rss/RSSMarketsMain.xml"),
+            ("StockTitan", "https://www.stocktitan.net/rss")
+        ],
+        "Crypto": [
+            ("Cointelegraph", "https://cointelegraph.com/rss"),
+            ("CoinDesk", "https://www.coindesk.com/arc/outboundfeeds/rss/")
+        ]
     }
     all_entries = []
-    for source, url in feeds.items():
-        feed = feedparser.parse(url)
-        for entry in feed.entries:
-            entry['source'] = source
-            all_entries.append(entry)
+    for category, sources in feeds.items():
+        for source, url in sources:
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                entry['source'] = source
+                entry['category'] = category
+                all_entries.append(entry)
+    
+    all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
+    return jsonify(all_entries)
+
+@app.route('/api/global-news')
+def get_global_news():
+    feeds = {
+        "US News": [
+            ("NPR", "https://feeds.npr.org/1003/rss.xml"),
+        ],
+        "EU News": [
+            ("BBC", "http://feeds.bbci.co.uk/news/world/europe/rss.xml"),
+        ],
+        "World News": [
+            ("BBC", "http://feeds.bbci.co.uk/news/world/rss.xml"),
+        ]
+    }
+    all_entries = []
+    for category, sources in feeds.items():
+        for source, url in sources:
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                entry['source'] = source
+                entry['category'] = category
+                all_entries.append(entry)
     
     all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
     return jsonify(all_entries)
@@ -135,9 +172,6 @@ def get_stock_data(ticker):
     ttm_dividends = dividends[dividends.index > now - pd.DateOffset(years=1)]
     annual_dividend = ttm_dividends.sum()
 
-    # Temp debug to see what keys are in info
-    print(f"Dividends for {ticker}: {stock.dividends}")
-    
     previous_close = hist['Close'].iloc[-2] if len(hist['Close']) > 1 else 0
     current_price = info.get('currentPrice') or info.get('previousClose')
     change = current_price - previous_close
@@ -198,4 +232,4 @@ def get_crypto_history(coin):
     return jsonify([])
 
 if __name__ == '__main__':
-    app.run(debug=True, port=9999)
+    app.run(debug=True, port=4101)

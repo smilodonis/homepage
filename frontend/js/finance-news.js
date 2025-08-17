@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const newsContainer = document.getElementById('news-container');
-  fetch('/api/global-news')
+  fetch('/api/finance-news')
     .then(r => r.json())
     .then(newsItems => {
       newsContainer.innerHTML = '';
