@@ -99,15 +99,21 @@ function computeDailySeries(days) {
 function renderTables() {
   const tbodyS = document.querySelector('#table-stocks tbody');
   tbodyS.innerHTML = '';
+  let totalPL = 0;
+  let totalMonthlyDividend = 0;
   portfolio.stocks.forEach(s => {
     const price = portfolioState.currentPrices.stocks[s.ticker] || 0;
     const value = price * s.shares;
     const pl = (price - s.costBasis) * s.shares;
     const monthlyDividend = (s.annualDividend || 0) * s.shares / 12;
+    totalPL += pl;
+    totalMonthlyDividend += monthlyDividend;
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${s.ticker}</td><td>${s.shares}</td><td>${formatBoth(price)}</td><td>${formatBoth(value)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td>${formatBoth(monthlyDividend)}</td>`;
     tbodyS.appendChild(tr);
   });
+  const tfootS = document.querySelector('#table-stocks tfoot');
+  tfootS.innerHTML = `<tr><td colspan="4" style="text-align:right; font-weight:bold;">Total</td><td style="font-weight:bold; color:${totalPL>=0?'#28a745':'#dc3545'}">${totalPL>=0?'+':''}${totalPL.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td style="font-weight:bold;">${formatBoth(totalMonthlyDividend)}</td></tr>`;
 
   const tbodyC = document.querySelector('#table-crypto tbody');
   tbodyC.innerHTML = '';
