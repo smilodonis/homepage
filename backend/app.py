@@ -53,6 +53,10 @@ def finance_news_page():
 def news_page():
     return send_from_directory(app.static_folder, 'news.html')
 
+@app.route('/weather')
+def weather_page():
+    return send_from_directory(app.static_folder, 'weather.html')
+
 @app.route('/settings')
 def settings_page():
     return send_from_directory(app.static_folder, 'settings.html')
@@ -107,6 +111,22 @@ def get_global_news():
     
     all_entries.sort(key=lambda x: x.published_parsed, reverse=True)
     return jsonify(all_entries)
+
+@app.route('/api/weather')
+def get_weather():
+    lat = 48.1486
+    lon = 17.1077
+    api_key = os.environ.get('OPENWEATHERMAP_API_KEY', '067af4b2723168f178a9c2f17d54d9e2')
+    if api_key == 'YOUR_API_KEY_HERE':
+        return jsonify({"error": "API key for OpenWeatherMap is not configured."}), 500
+
+    url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly&appid={api_key}&units=metric"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/styles.css')
 def styles_file():
