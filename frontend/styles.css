@@ -13,13 +13,19 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .nav a.active { color: #007aff; border-bottom: 2px solid #007aff; }
 
 
-#news-container { max-width: 800px; margin: 20px auto; }
-.news-item { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: box-shadow 0.3s ease-in-out; }
-.news-item:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-.news-item h3 { margin-top: 0; font-size: 1.25em; }
-.news-item a { text-decoration: none; color: #007aff; font-weight: 600; }
-.news-item a:hover { text-decoration: underline; }
-.news-item p { color: #555; line-height: 1.6; }
+.news-header { text-align: center; margin: 20px auto 40px; max-width: 800px; }
+.news-header h1 { margin-bottom: 5px; }
+.news-header p { font-size: 1.1em; color: #666; }
+.news-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+#news-container { max-width: 1200px; margin: 20px auto; }
+.news-item { display: flex; flex-direction: column; background-color: #fff; border: 1px solid #e8e8e8; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden; }
+.news-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+.news-content { padding: 25px; }
+.news-item h3 { margin-top: 0; font-size: 1.1em; line-height: 1.4; }
+.news-item a { text-decoration: none; color: #1a1a1a; font-weight: 600; }
+.news-item a:hover { color: #555; }
+.news-item p { color: #555; line-height: 1.6; margin-bottom: 15px; }
 .news-item small { font-size: 0.85em; color: #888; }
 
 .price-info { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin-bottom: 10px; }
@@ -27,8 +33,9 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .positive { color: #28a745; }
 .negative { color: #dc3545; }
 
-.big-chart-container { margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 80%; }
-.back-button { background: none; border: 1px solid #ddd; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 0.9em; margin-bottom: 15px; }
+.big-chart-container { position: relative; margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 80%; }
+.close-button { position: absolute; top: 10px; right: 15px; font-size: 2.5em; font-weight: bold; color: #aaa; cursor: pointer; line-height: 0.5; }
+.close-button:hover { color: #333; }
 .timeframe-controls { text-align: center; margin-bottom: 15px; }
 .timeframe-button { background-color: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; padding: 8px 15px; margin: 0 5px; cursor: pointer; }
 .timeframe-button.active { background-color: #007aff; color: #fff; border-color: #007aff; }

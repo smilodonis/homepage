@@ -56,6 +56,8 @@ def settings_page():
 def get_news():
     feeds = {
         "Reuters": "https://www.reuters.com/markets/us/rss",
+        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories",
+        "Wall Street Journal": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
         "StockTitan": "https://www.stocktitan.net/rss"
     }
     all_entries = []

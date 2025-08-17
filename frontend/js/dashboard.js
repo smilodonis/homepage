@@ -67,8 +67,11 @@ function computeCurrentValues() {
   let stocksVal = 0, cryptoVal = 0, companiesVal = 0, otherVal = 0;
   portfolio.stocks.forEach(s => { const p = portfolioState.currentPrices.stocks[s.ticker] || 0; stocksVal += p * s.shares; });
   portfolio.cryptos.forEach(c => { const p = portfolioState.currentPrices.crypto[c.symbol] || 0; cryptoVal += p * c.units; });
-  portfolio.companies.forEach(co => { companiesVal += Number(co.investedUSD || 0); });
-  portfolio.other.forEach(o => { const last = o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0; otherVal += last; });
+  portfolio.companies.forEach(co => { companiesVal += (Number(co.investedUSD || 0)) / (usdToEurRate || 1); });
+  portfolio.other.forEach(o => { 
+    const last = (o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
+    otherVal += last; 
+  });
   return { stocksVal, cryptoVal, companiesVal, otherVal, total: stocksVal + cryptoVal + companiesVal + otherVal };
 }
 
@@ -82,8 +85,8 @@ function computeDailySeries(days) {
     const k = dayKey(d); let sv = 0, cv = 0, pv = 0, ov = 0;
     if (portfolioState.include.stocks) { portfolio.stocks.forEach(s => { const px = stockMaps[s.ticker][k]; sv += (px !== undefined ? px : 0) * s.shares; }); if (sv === 0 && lastStockVal) sv = lastStockVal; }
     if (portfolioState.include.crypto) { portfolio.cryptos.forEach(c => { const px = cryptoMaps[c.symbol][k]; cv += (px !== undefined ? px : 0) * c.units; }); if (cv === 0 && lastCryptoVal) cv = lastCryptoVal; }
-    if (portfolioState.include.companies) { portfolio.companies.forEach(co => { pv += Number(co.investedUSD || 0); }); if (pv === 0 && lastCompaniesVal) pv = lastCompaniesVal; }
-    if (portfolioState.include.other) { portfolio.other.forEach(o => { let val = 0; for (let i=0;i<o.valueHistory.length;i++) { if (o.valueHistory[i][0] <= d.getTime()) val = o.valueHistory[i][1]; else break; } ov += val || 0; }); if (ov === 0 && lastOtherVal) ov = lastOtherVal; }
+    if (portfolioState.include.companies) { portfolio.companies.forEach(co => { pv += (Number(co.investedUSD || 0)) / (usdToEurRate || 1); }); if (pv === 0 && lastCompaniesVal) pv = lastCompaniesVal; }
+    if (portfolioState.include.other) { portfolio.other.forEach(o => { let val = 0; for (let i=0;i<o.valueHistory.length;i++) { if (o.valueHistory[i][0] <= d.getTime()) val = o.valueHistory[i][1]; else break; } ov += (val || 0) / (usdToEurRate || 1); }); if (ov === 0 && lastOtherVal) ov = lastOtherVal; }
     const total = sv + cv + pv + ov; series.push([d, total, sv, cv, pv, ov]);
     lastStockVal = sv || lastStockVal; lastCryptoVal = cv || lastCryptoVal; lastCompaniesVal = pv || lastCompaniesVal; lastOtherVal = ov || lastOtherVal;
   });
@@ -116,20 +119,20 @@ function renderTables() {
   const tbodyP = document.querySelector('#table-companies tbody');
   tbodyP.innerHTML = '';
   portfolio.companies.forEach(co => {
-    const invested = Number(co.investedUSD || 0);
+    const invested = (Number(co.investedUSD || 0)) / (usdToEurRate || 1);
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${co.name}</td><td colspan=\"2\">Invested</td><td>${formatBoth(invested)}</td><td></td>`;
+    tr.innerHTML = `<td>${co.name}</td><td colspan="2">Invested</td><td>${formatBoth(invested)}</td><td></td>`;
     tbodyP.appendChild(tr);
   });
 
   const tbodyO = document.querySelector('#table-other tbody');
   tbodyO.innerHTML = '';
   portfolio.other.forEach(o => {
-    const latest = o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0;
-    const first = o.valueHistory[0]?.[1] || latest;
+    const latest = (o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
+    const first = (o.valueHistory[0]?.[1] || latest) / (usdToEurRate || 1);
     const pl = latest - first;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${o.name}</td><td>${formatBoth(o.latestValuationUSD || latest)}</td><td>${formatBoth(latest)}</td><td style=\"color:${pl>=0?'#28a745':'#dc3545'}\">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    tr.innerHTML = `<td>${o.name}</td><td>${formatBoth((o.latestValuationUSD || latest) / (usdToEurRate || 1))}</td><td>${formatBoth(latest)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     tbodyO.appendChild(tr);
   });
 }

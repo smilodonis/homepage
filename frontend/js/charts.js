@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadFxRate().then(initializeCharts);
   setInterval(updateMarketStatus, 1000);
   updateMarketStatus();
-  document.getElementById('back-button').onclick = hideBigChart;
+  document.getElementById('close-button').onclick = hideBigChart;
 });
 
 

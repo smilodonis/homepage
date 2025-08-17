@@ -6,8 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
       newsContainer.innerHTML = '';
       newsItems.forEach(item => {
         const newsDiv = document.createElement('div');
-        newsDiv.className = 'news-item';
-        newsDiv.innerHTML = `<h3><a href="${item.link}" target="_blank">${item.title}</a></h3><p>${item.summary}</p><small><strong>Source:</strong> ${item.source} | <strong>Published:</strong> ${new Date(item.published).toLocaleString()}</small>`;
+        newsDiv.className = 'news--item';
+        const summary = item.summary || '';
+        const title = item.title || 'No Title';
+        const link = item.link || '#';
+        const source = item.source || 'Unknown Source';
+        const published = item.published ? new Date(item.published).toLocaleString() : 'No Date';
+
+        newsDiv.innerHTML = `
+          <div class="news-content">
+            <h3><a href="${link}" target="_blank">${title}</a></h3>
+            <p>${summary}</p>
+            <small><strong>Source:</strong> ${source} | <strong>Published:</strong> ${published}</small>
+          </div>
+        `;
         newsContainer.appendChild(newsDiv);
       });
     });
