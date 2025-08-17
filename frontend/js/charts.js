@@ -254,7 +254,10 @@ function renderBigChart() {
         borderWidth: 2,
         fill: currentChartType === 'line',
         backgroundColor: 'rgba(0,122,255,0.1)',
-        yAxisID: 'y'
+        yAxisID: 'y',
+        parsing: currentChartType === 'candlestick' ? false : undefined,
+        barPercentage: 0.5,
+        categoryPercentage: 0.5
     }];
 
     const scales = {
