@@ -57,7 +57,7 @@ function renderList(containerId, items, type) {
       const n = el('input'); n.placeholder = 'e.g., Acme Inc.'; n.value = item.name || '';
       nWrap.appendChild(n);
       const valWrap = el('label', 'field');
-      valWrap.appendChild(el('span', 'field-label', 'Invested Amount (USD)'));
+      valWrap.appendChild(el('span', 'field-label', 'Invested Amount (EUR)'));
       const val = el('input'); val.type = 'number'; val.placeholder = 'e.g., 50000'; val.value = item.investedUSD || 0;
       valWrap.appendChild(val);
       const rem = el('button', 'remove-btn'); rem.textContent = 'Remove'; rem.onclick = () => { portfolio.companies.splice(idx,1); renderAll(); };
@@ -71,7 +71,7 @@ function renderList(containerId, items, type) {
       const n = el('input'); n.placeholder = 'e.g., Savings'; n.value = item.name || '';
       nWrap.appendChild(n);
       const valWrap = el('label', 'field');
-      valWrap.appendChild(el('span', 'field-label', 'Latest Valuation (USD)'));
+      valWrap.appendChild(el('span', 'field-label', 'Latest Valuation (EUR)'));
       const val = el('input'); val.type = 'number'; val.placeholder = 'e.g., 25000'; val.value = item.latestValuationUSD || 0;
       valWrap.appendChild(val);
       const rem = el('button', 'remove-btn'); rem.textContent = 'Remove'; rem.onclick = () => { portfolio.other.splice(idx,1); renderAll(); };
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPortfolio();
   document.getElementById('add-stock').onclick = () => { portfolio.stocks.push({ ticker:'', shares:0, costBasis:0 }); renderAll(); };
   document.getElementById('add-crypto').onclick = () => { portfolio.cryptos.push({ symbol:'', units:0, costBasis:0 }); renderAll(); };
-  document.getElementById('add-company').onclick = () => { portfolio.companies.push({ name:'', stakePercent:0, latestRoundValuationUSD:0 }); renderAll(); };
+  document.getElementById('add-company').onclick = () => { portfolio.companies.push({ name:'', investedUSD:0 }); renderAll(); };
   document.getElementById('add-other').onclick = () => { portfolio.other.push({ name:'', latestValuationUSD:0 }); renderAll(); };
   document.getElementById('save-portfolio').onclick = savePortfolio;
   document.getElementById('reset-defaults').onclick = resetDefaults;
