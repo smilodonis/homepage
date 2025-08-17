@@ -29,26 +29,40 @@ async function fetchPortfolioData() {
     await loadHoldings();
   }
   await Promise.all(portfolio.stocks.map(async (s) => {
-    const res = await fetch(`/api/stock/${s.ticker}?period=1y`);
-    const data = await res.json();
-    const hist = (Array.isArray(data) ? data : data.history) || [];
-    portfolioState.stockHistories[s.ticker] = hist.map(it => ({ date: new Date(it.Date), close: it.Close }));
-    if (!Array.isArray(data)) {
-      portfolioState.currentPrices.stocks[s.ticker] = data.info.currentPrice;
-      s.annualDividend = data.info.annualDividend;
+    try {
+      const res = await fetch(`/api/stock/${s.ticker}?period=1y`);
+      const data = await res.json();
+      const hist = (Array.isArray(data) ? data : data.history) || [];
+      portfolioState.stockHistories[s.ticker] = hist.map(it => ({ date: new Date(it.Date), close: it.Close }));
+      if (!Array.isArray(data)) {
+        portfolioState.currentPrices.stocks[s.ticker] = data.info.currentPrice;
+        s.annualDividend = data.info.annualDividend;
+      }
+      else if (hist.length) portfolioState.currentPrices.stocks[s.ticker] = hist[hist.length-1].Close;
+    } catch (e) {
+      console.error(`Failed to fetch stock data for ${s.ticker}:`, e);
     }
-    else if (hist.length) portfolioState.currentPrices.stocks[s.ticker] = hist[hist.length-1].Close;
   }));
 
   const cryptoSymbols = portfolio.cryptos.map(c => c.symbol).join(',');
-  const priceRes = await fetch(`/api/crypto/prices?fsyms=${cryptoSymbols}`);
-  const priceJson = await priceRes.json();
-  Object.keys(priceJson || {}).forEach(sym => { portfolioState.currentPrices.crypto[sym] = priceJson[sym]?.price || 0; });
+  if (cryptoSymbols) {
+    try {
+      const priceRes = await fetch(`/api/crypto/prices?fsyms=${cryptoSymbols}`);
+      const priceJson = await priceRes.json();
+      Object.keys(priceJson || {}).forEach(sym => { portfolioState.currentPrices.crypto[sym] = priceJson[sym]?.price || 0; });
+    } catch (e) {
+      console.error('Failed to fetch crypto prices:', e);
+    }
+  }
 
   await Promise.all(portfolio.cryptos.map(async (c) => {
-    const res = await fetch(`/api/crypto/history/${c.symbol}?period=1y`);
-    const data = await res.json();
-    portfolioState.cryptoHistories[c.symbol] = Array.isArray(data) ? data : [];
+    try {
+      const res = await fetch(`/api/crypto/history/${c.symbol}?period=1y`);
+      const data = await res.json();
+      portfolioState.cryptoHistories[c.symbol] = Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error(`Failed to fetch crypto history for ${c.symbol}:`, e);
+    }
   }));
 }
 
@@ -71,9 +85,10 @@ function computeCurrentValues() {
   portfolio.stocks.forEach(s => { const p = portfolioState.currentPrices.stocks[s.ticker] || 0; stocksVal += p * s.shares; });
   portfolio.cryptos.forEach(c => { const p = portfolioState.currentPrices.crypto[c.symbol] || 0; cryptoVal += p * c.units; });
   portfolio.companies.forEach(co => { companiesVal += (Number(co.investedUSD || 0)) / (usdToEurRate || 1); });
-  portfolio.other.forEach(o => { 
-    const last = (o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
-    otherVal += last; 
+  portfolio.other.forEach(o => {
+    const history = o.valueHistory || [];
+    const last = (history[history.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
+    otherVal += last;
   });
   return { stocksVal, cryptoVal, companiesVal, otherVal, total: stocksVal + cryptoVal + companiesVal + otherVal };
 }
@@ -82,14 +97,14 @@ function computeDailySeries(days) {
   const dates = buildDailyRange(days);
   const dayKey = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0,10);
   const stockMaps = {}; portfolio.stocks.forEach(s => { const map = {}; (portfolioState.stockHistories[s.ticker] || []).forEach(pt => { map[dayKey(pt.date)] = pt.close; }); stockMaps[s.ticker] = map; });
-  const cryptoMaps = {}; portfolio.cryptos.forEach(c => { const map = {}; (portfolioState.cryptoHistories[c.symbol] || []).forEach(pt => { const d = new Date(pt[0]); map[dayKey(d)] = pt[1]; }); cryptoMaps[c.symbol] = map; });
+  const cryptoMaps = {}; portfolio.cryptos.forEach(c => { const map = {}; (portfolioState.cryptoHistories[c.symbol] || []).forEach(pt => { const d = new Date(pt.time); map[dayKey(d)] = pt.close; }); cryptoMaps[c.symbol] = map; });
   const series = []; let lastStockVal = 0, lastCryptoVal = 0, lastCompaniesVal = 0, lastOtherVal = 0;
   dates.forEach(d => {
     const k = dayKey(d); let sv = 0, cv = 0, pv = 0, ov = 0;
     if (portfolioState.include.stocks) { portfolio.stocks.forEach(s => { const px = stockMaps[s.ticker][k]; sv += (px !== undefined ? px : 0) * s.shares; }); if (sv === 0 && lastStockVal) sv = lastStockVal; }
     if (portfolioState.include.crypto) { portfolio.cryptos.forEach(c => { const px = cryptoMaps[c.symbol][k]; cv += (px !== undefined ? px : 0) * c.units; }); if (cv === 0 && lastCryptoVal) cv = lastCryptoVal; }
     if (portfolioState.include.companies) { portfolio.companies.forEach(co => { pv += (Number(co.investedUSD || 0)) / (usdToEurRate || 1); }); if (pv === 0 && lastCompaniesVal) pv = lastCompaniesVal; }
-    if (portfolioState.include.other) { portfolio.other.forEach(o => { let val = 0; for (let i=0;i<o.valueHistory.length;i++) { if (o.valueHistory[i][0] <= d.getTime()) val = o.valueHistory[i][1]; else break; } ov += (val || 0) / (usdToEurRate || 1); }); if (ov === 0 && lastOtherVal) ov = lastOtherVal; }
+    if (portfolioState.include.other) { portfolio.other.forEach(o => { let val = 0; const history = o.valueHistory || []; for (let i=0;i<history.length;i++) { if (history[i][0] <= d.getTime()) val = history[i][1]; else break; } ov += (val || 0) / (usdToEurRate || 1); }); if (ov === 0 && lastOtherVal) ov = lastOtherVal; }
     const total = sv + cv + pv + ov; series.push([d, total, sv, cv, pv, ov]);
     lastStockVal = sv || lastStockVal; lastCryptoVal = cv || lastCryptoVal; lastCompaniesVal = pv || lastCompaniesVal; lastOtherVal = ov || lastOtherVal;
   });
@@ -138,8 +153,9 @@ function renderTables() {
   const tbodyO = document.querySelector('#table-other tbody');
   tbodyO.innerHTML = '';
   portfolio.other.forEach(o => {
-    const latest = (o.valueHistory[o.valueHistory.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
-    const first = (o.valueHistory[0]?.[1] || latest) / (usdToEurRate || 1);
+    const history = o.valueHistory || [];
+    const latest = (history[history.length-1]?.[1] || o.latestValuationUSD || 0) / (usdToEurRate || 1);
+    const first = (history[0]?.[1] || latest) / (usdToEurRate || 1);
     const pl = latest - first;
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${o.name}</td><td>${formatBoth((o.latestValuationUSD || latest) / (usdToEurRate || 1))}</td><td>${formatBoth(latest)}</td><td style="color:${pl>=0?'#28a745':'#dc3545'}">${pl>=0?'+':''}${pl.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
@@ -197,7 +213,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('inc-crypto').addEventListener('change', (e) => { portfolioState.include.crypto = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-companies').addEventListener('change', (e) => { portfolioState.include.companies = e.target.checked; renderPortfolio(); });
   document.getElementById('inc-other').addEventListener('change', (e) => { portfolioState.include.other = e.target.checked; renderPortfolio(); });
-  loadFxRate().then(() => loadHoldings().then(() => fetchPortfolioData().then(renderPortfolio)));
+
+  async function initializeDashboard() {
+    await loadFxRate();
+    await loadHoldings();
+    await fetchPortfolioData();
+    renderPortfolio();
+  }
+
+  initializeDashboard();
 });
 
 
