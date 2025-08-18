@@ -31,7 +31,9 @@ DEFAULT_PORTFOLIO = {
     "other": [
         { "name": "Savings Account", "latestValuationUSD": 25000, "valueHistory": [] },
         { "name": "Gold ETF", "latestValuationUSD": 12000, "valueHistory": [] }
-    ]
+    ],
+    "chartStocks": ["AAPL", "NVDA", "MSFT", "GOOGL", "TSLA", "BITO"],
+    "chartCryptos": ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA"]
 }
 
 @app.route('/')

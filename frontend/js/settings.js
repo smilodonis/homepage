@@ -1,4 +1,4 @@
-let portfolio = { stocks: [], cryptos: [], companies: [], other: [] };
+let portfolio = { stocks: [], cryptos: [], companies: [], other: [], chartStocks: [], chartCryptos: [] };
 
 function el(tag, className, html) {
   const e = document.createElement(tag);
@@ -88,16 +88,24 @@ function renderAll() {
   renderList('cryptos-list', portfolio.cryptos, 'cryptos');
   renderList('companies-list', portfolio.companies, 'companies');
   renderList('other-list', portfolio.other, 'other');
+
+  document.getElementById('chart-stocks-input').value = (portfolio.chartStocks || []).join(', ');
+  document.getElementById('chart-cryptos-input').value = (portfolio.chartCryptos || []).join(', ');
 }
 
 async function loadPortfolio() {
   const res = await fetch('/api/portfolio');
   const data = await res.json();
   portfolio = data;
+  if (!portfolio.chartStocks) portfolio.chartStocks = [];
+  if (!portfolio.chartCryptos) portfolio.chartCryptos = [];
   renderAll();
 }
 
 async function savePortfolio() {
+  portfolio.chartStocks = document.getElementById('chart-stocks-input').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  portfolio.chartCryptos = document.getElementById('chart-cryptos-input').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
   const res = await fetch('/api/portfolio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(portfolio) });
   if (!res.ok) { alert('Failed to save'); return; }
   alert('Saved');

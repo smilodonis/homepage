@@ -28,6 +28,18 @@ function loadFxRate() {
   return fetch('/api/fx').then(r => r.json()).then(d => { usdToEurRate = d.usdToEur || null; }).catch(() => {});
 }
 
+function createChartElement(id, name, type) {
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'chart-container';
+    if (type === 'stock') {
+        chartDiv.innerHTML = `<h3>${name}</h3><div class="price-info"><div class="current-price" id="price-${id}">-</div><div class="daily-change" id="change-${id}"></div></div><div class="stock-info" id="info-${id}">Loading info...</div><canvas id="chart-${id}"></canvas><div class="last-updated" id="updated-${id}"></div>`;
+    } else {
+        chartDiv.innerHTML = `<h3>${name}</h3><div class="price-info"><div class="current-price" id="price-${id}">-</div><div class="daily-change" id="change-${id}"></div></div><canvas id="chart-${id}"></canvas><div class="last-updated" id="updated-${id}"></div>`;
+    }
+    chartDiv.onclick = () => showBigChart(id, name, type);
+    return chartDiv;
+}
+
 function createChart(canvasId, labels, data, label, color) {
   const ctx = document.getElementById(canvasId).getContext('2d');
   charts[canvasId] = new Chart(ctx, {
@@ -50,7 +62,7 @@ function updateChart(canvasId, labels, data) {
   }
 }
 
-function fetchStockData(ticker) {
+function fetchStockData(ticker, name) {
   fetch(`/api/stock/${ticker}`)
     .then(r => {
       if (!r.ok) throw new Error(`Failed to fetch data for ${ticker}`);
@@ -58,6 +70,9 @@ function fetchStockData(ticker) {
     })
     .then(data => {
       if (data.error) throw new Error(data.error);
+
+      const displayName = data.info.shortName || name;
+      document.querySelector(`#chart-${ticker}`).parentElement.querySelector('h3').textContent = displayName;
 
       document.getElementById(`price-${ticker}`).textContent = formatPriceBoth(Number(data.info.currentPrice.toFixed(2)));
       const changeEl = document.getElementById(`change-${ticker}`);
@@ -85,40 +100,40 @@ function fetchStockData(ticker) {
     });
 }
 
-function fetchCryptoData() {
-  const cryptoIds = cryptos.map(c => c.id).join(',');
+function fetchCryptoData(coins) {
+  const cryptoIds = coins.map(c => c).join(',');
   fetch(`/api/crypto/prices?fsyms=${cryptoIds}`)
     .then(r => r.json())
     .then(prices => {
-      cryptos.forEach(coin => {
-        if (prices[coin.id]) {
-          const priceEl = document.getElementById(`price-${coin.id}`);
-          if (priceEl) priceEl.textContent = formatPriceBoth(prices[coin.id].price);
-          const changeEl = document.getElementById(`change-${coin.id}`);
+      coins.forEach(coinId => {
+        if (prices[coinId]) {
+          const priceEl = document.getElementById(`price-${coinId}`);
+          if (priceEl) priceEl.textContent = formatPriceBoth(prices[coinId].price);
+          const changeEl = document.getElementById(`change-${coinId}`);
           if (changeEl) {
-            const change = prices[coin.id].change.toFixed(2);
-            const changePercent = prices[coin.id].changePercent.toFixed(2);
+            const change = prices[coinId].change.toFixed(2);
+            const changePercent = prices[coinId].changePercent.toFixed(2);
             changeEl.textContent = `${change} (${changePercent}%)`;
             changeEl.className = 'daily-change';
-            if (prices[coin.id].change > 0) changeEl.classList.add('positive');
-            else if (prices[coin.id].change < 0) changeEl.classList.add('negative');
+            if (prices[coinId].change > 0) changeEl.classList.add('positive');
+            else if (prices[coinId].change < 0) changeEl.classList.add('negative');
           }
-          const updatedEl = document.getElementById(`updated-${coin.id}`);
+          const updatedEl = document.getElementById(`updated-${coinId}`);
           if (updatedEl) updatedEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
       });
     });
 
-  cryptos.forEach(coin => {
-    fetch(`/api/crypto/history/${coin.id}`)
+  coins.forEach(coinId => {
+    fetch(`/api/crypto/history/${coinId}`)
       .then(r => r.json())
       .then(data => {
         if (!data || data.length === 0) return;
-        const dates = data.map(item => new Date(item[0]));
-        const prices = data.map(item => item[1]);
-        const canvasId = `chart-${coin.id}`;
+        const dates = data.map(item => new Date(item.time));
+        const prices = data.map(item => item.close);
+        const canvasId = `chart-${coinId}`;
         if (charts[canvasId]) updateChart(canvasId, dates, prices);
-        else createChart(canvasId, dates, prices, `${coin.name} Price`, 'rgba(255, 159, 64, 1)');
+        else createChart(canvasId, dates, prices, `${coinId} Price`, 'rgba(255, 159, 64, 1)');
       });
   });
 }
@@ -412,9 +427,9 @@ function initializeCharts() {
   fetchCryptoData();
 }
 
-function refreshData() {
-  stocks.forEach(fetchStockData);
-  fetchCryptoData();
+function refreshData(stocks, cryptos) {
+  stocks.forEach(ticker => fetchStockData(ticker, ticker));
+  fetchCryptoData(cryptos);
 }
 
 let refreshInterval;
@@ -434,8 +449,14 @@ function updateMarketStatus() {
   if (isOpen !== lastMarketStatus) {
     lastMarketStatus = isOpen;
     if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(refreshData, isOpen ? 60000 : 3600000);
-    refreshData();
+    
+    // We need to fetch the portfolio again to get the lists for the refresh function
+    fetch('/api/portfolio').then(r=>r.json()).then(portfolio => {
+        const stocksToRefresh = portfolio.chartStocks || [];
+        const cryptosToRefresh = portfolio.chartCryptos || [];
+        refreshInterval = setInterval(() => refreshData(stocksToRefresh, cryptosToRefresh), isOpen ? 60000 : 3600000);
+        refreshData(stocksToRefresh, cryptosToRefresh);
+    });
   }
   statusEl.style.color = isOpen ? 'green' : 'black';
   if (isOpen) {
@@ -515,12 +536,44 @@ function calculateRSI(data, period = 14) {
     return rsi;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadFxRate().then(initializeCharts);
-  setInterval(updateMarketStatus, 1000);
-  updateMarketStatus();
-  document.getElementById('close-button').onclick = hideBigChart;
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadFxRate();
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 1000);
 
+    try {
+        const portfolioRes = await fetch('/api/portfolio');
+        const portfolio = await portfolioRes.json();
+
+        const stocks = portfolio.chartStocks || [];
+        const cryptos = portfolio.chartCryptos || [];
+
+        const stockChartsContainer = document.getElementById('stock-charts');
+        stockChartsContainer.innerHTML = ''; // Clear any default/placeholder content
+        stocks.forEach(ticker => {
+            const chartEl = createChartElement(ticker, ticker, 'stock');
+            stockChartsContainer.appendChild(chartEl);
+            fetchStockData(ticker, ticker); // Use ticker for name initially
+        });
+
+        const cryptoChartsContainer = document.getElementById('crypto-charts');
+        cryptoChartsContainer.innerHTML = ''; // Clear any default/placeholder content
+        cryptos.forEach(symbol => {
+            const chartEl = createChartElement(symbol, symbol, 'crypto');
+            cryptoChartsContainer.appendChild(chartEl);
+        });
+        fetchCryptoData(cryptos);
+
+    } catch (error) {
+        console.error("Failed to load chart tickers from portfolio:", error);
+        const stockChartsContainer = document.getElementById('stock-charts');
+        stockChartsContainer.textContent = 'Could not load chart configuration. Please check settings.';
+    }
+
+
+    // Big chart controls setup
+    document.getElementById('close-button').onclick = hideBigChart;
+  
   const timeframeButtons = document.querySelectorAll('.timeframe-button');
   timeframeButtons.forEach(button => {
     button.onclick = (e) => {

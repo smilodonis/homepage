@@ -143,7 +143,7 @@ The frontend is composed of several distinct pages, each with a dedicated HTML a
 
 - **`settings.html` / `js/settings.js`**
   - **Purpose:** Allows the user to customize their portfolio holdings.
-  - **Functionality:** Provides forms to add, edit, or remove entries for Stocks, Crypto, Companies, and Other assets. Changes can be saved to the `portfolio.json` file on the server or reset to the application defaults.
+  - **Functionality:** Provides forms to add, edit, or remove entries for Stocks, Crypto, Companies, and Other assets. It also includes fields to specify which tickers/symbols should be displayed on the Charts page. Changes can be saved to the `portfolio.json` file on the server or reset to the application defaults.
 
 ---
 
