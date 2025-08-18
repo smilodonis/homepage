@@ -5,6 +5,7 @@ import yfinance as yf
 import requests
 import feedparser
 import pandas as pd
+from config import OPENWEATHERMAP_API_KEY
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
 
@@ -122,8 +123,8 @@ def get_global_news():
 def get_weather():
     lat = 48.1486
     lon = 17.1077
-    api_key = os.environ.get('OPENWEATHERMAP_API_KEY', '067af4b2723168f178a9c2f17d54d9e2')
-    if api_key == 'YOUR_API_KEY_HERE':
+    api_key = OPENWEATHERMAP_API_KEY
+    if not api_key or api_key == 'YOUR_API_KEY_HERE':
         return jsonify({"error": "API key for OpenWeatherMap is not configured."}), 500
 
     forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"

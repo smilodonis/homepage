@@ -23,6 +23,7 @@ The application follows a simple client-server model.
 ### 2.1. Backend
 - **Framework:** Python Flask
 - **Location:** `backend/app.py`
+- **Configuration:** `backend/config.py` (for API keys and other secrets)
 - **Responsibilities:**
     1. **API Server:** Exposes a series of RESTful API endpoints that the frontend consumes to fetch all necessary data (e.g., stock prices, news feeds, weather forecasts).
     2. **Static File Server:** Serves the static frontend files (HTML, CSS, JavaScript) directly to the user's browser. This simplifies the architecture by avoiding the need for a separate web server.
