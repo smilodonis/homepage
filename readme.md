@@ -134,11 +134,11 @@ The frontend is composed of several distinct pages, each with a dedicated HTML a
   - **Layout:** A three-column grid for "US," "EU," and "World" news categories. Each article is presented in a card format with a title, source, and summary.
 
 - **`weather.html` / `js/weather.js`**
-  - **Purpose:** Shows weather information for Bratislava.
+  - **Purpose:** Displays local weather information for Bratislava.
   - **Key Components:**
-    - **Current Weather Card:** Displays the current temperature, conditions (with icon), wind speed, and precipitation chance.
-    - **7-Day Forecast:** A list of cards showing the forecast for the upcoming week.
-    - **Wind Chart:** A bar chart visualizing wind speed and direction over the next 24 hours, with annotation lines for "Safe" and "Optimal" wind speeds.
+    - **Current Weather:** A card showing the current temperature, conditions, wind speed, and precipitation chance.
+    - **7-Day Forecast:** A summary of the forecast for the upcoming week.
+    - **Wind Chart:** A bar chart visualizing wind speed (in km/h). Very large, bold arrows are rendered directly on the bars to indicate wind direction. Includes annotation lines for safe and optimal wind speeds.
     - **Radar Map:** An embedded, interactive radar map from Windy.com centered on Bratislava.
 
 - **`settings.html` / `js/settings.js`**

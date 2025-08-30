@@ -160,14 +160,19 @@ def get_weather():
             most_common_icon = max(set(icons), key=icons.count)
             main_weather = next(item['weather'][0] for item in items if item['weather'][0]['icon'] == most_common_icon)
             max_pop = max(item.get('pop', 0) for item in items)
-            max_wind = max(item['wind']['speed'] for item in items)
+            
+            # Find the item with the maximum wind speed to get the corresponding direction
+            max_wind_item = max(items, key=lambda x: x['wind']['speed'])
+            max_wind_speed = max_wind_item['wind']['speed']
+            max_wind_deg = max_wind_item['wind']['deg']
 
             processed_daily.append({
                 'dt': items[0]['dt'],
                 'temp': {'day': max_temp, 'min': min_temp},
                 'weather': [main_weather],
                 'pop': max_pop,
-                'wind_speed': max_wind,
+                'wind_speed': max_wind_speed,
+                'wind_deg': max_wind_deg,
             })
         
         final_data = {
