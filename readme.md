@@ -112,7 +112,8 @@ The frontend is composed of several distinct pages, each with a dedicated HTML a
     - **Summary Cards:** Shows total net worth and the value of each asset class (Stocks, Crypto, Companies, Other).
     - **Net Worth Chart:** A line chart visualizing the total portfolio value over a selectable time period (1M, 3M, 6M, 1Y).
     - **Allocation Chart:** A doughnut chart showing the current percentage allocation of assets.
-    - **Holdings Tables:** Detailed tables for each asset class, showing individual holdings, current values, and Profit/Loss (P/L). The stocks table also includes a "Monthly Dividend" column and a summary footer for total P/L and dividends.
+    - **Holdings Tables:** Detailed tables for each asset class, showing individual holdings, current values, and Profit/Loss (P/L). The stocks table includes a "Monthly Dividend" column (with a 15% tax deduction applied) and a summary footer for totals.
+    - **Data Interaction:** The dashboard is fully interactive, updating values and charts based on user selections for included asset types and timeframes.
 
 - **`charts.html` / `js/charts.js`**
   - **Purpose:** Provides a detailed view of financial charts.
@@ -137,8 +138,8 @@ The frontend is composed of several distinct pages, each with a dedicated HTML a
   - **Purpose:** Displays local weather information for Bratislava.
   - **Key Components:**
     - **Current Weather:** A card showing the current temperature, conditions, wind speed, and precipitation chance.
-    - **7-Day Forecast:** A summary of the forecast for the upcoming week.
-    - **Wind Chart:** A bar chart visualizing wind speed (in km/h). Very large, bold arrows are rendered directly on the bars to indicate wind direction. Includes annotation lines for safe and optimal wind speeds.
+    - **7-Day Forecast:** A summary of the forecast for the upcoming week, with enlarged and bolded day names for emphasis.
+    - **Wind Chart:** A bar chart visualizing wind speed (in km/h) for the forecast period, labeling the current day as "Today". Very large, bold arrows are rendered directly on the bars to indicate wind direction. The day labels below the chart are also enlarged and bold. Includes annotation lines for safe and optimal wind speeds.
     - **Radar Map:** An embedded, interactive radar map from Windy.com centered on Bratislava.
 
 - **`settings.html` / `js/settings.js`**

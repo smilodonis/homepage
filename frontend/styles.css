@@ -45,6 +45,7 @@ h1, h2 { text-align: center; color: #1a1a1a; }
 .forecast-card-new { display: flex; justify-content: space-between; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); grid-column: 1 / -1; }
 .forecast-day-compact { text-align: center; }
 .forecast-day-compact i { font-size: 2.5em; }
+.forecast-day-compact p strong { font-size: 1.2em; }
 .wind-chart-container { grid-column: 1 / -1; background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-height: 350px; }
 .radar-map { grid-column: 1 / -1; }
 

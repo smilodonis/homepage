@@ -120,7 +120,7 @@ function renderTables() {
     const price = portfolioState.currentPrices.stocks[s.ticker] || 0;
     const value = price * s.shares;
     const pl = (price - s.costBasis) * s.shares;
-    const monthlyDividend = (s.annualDividend || 0) * s.shares / 12;
+    const monthlyDividend = ((s.annualDividend || 0) * s.shares / 12) * 0.85; // Subtract 15%
     totalPL += pl;
     totalMonthlyDividend += monthlyDividend;
     const tr = document.createElement('tr');

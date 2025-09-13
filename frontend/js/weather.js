@@ -44,7 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderWindChart(dailyForecast) {
       const ctx = document.getElementById('wind-chart').getContext('2d');
       
-      const windLabels = dailyForecast.map(day => new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }));
+      const windLabels = dailyForecast.map((day, index) => {
+          if (index === 0) {
+              return 'Today';
+          }
+          return new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+      });
       const windSpeeds = dailyForecast.map(day => (day.wind_speed * 3.6).toFixed(1));
       const backgroundColors = windSpeeds.map(speed => speed < 20 ? 'rgba(40, 167, 69, 0.2)' : 'rgba(75, 192, 192, 0.2)');
       const borderColors = windSpeeds.map(speed => speed < 20 ? 'rgba(40, 167, 69, 1)' : 'rgba(75, 192, 192, 1)');
@@ -69,6 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
           options: {
               maintainAspectRatio: false,
               scales: {
+                  x: {
+                      ticks: {
+                          font: {
+                              size: 14,
+                              weight: 'bold'
+                          }
+                      }
+                  },
                   y: { beginAtZero: true }
               },
               plugins: {
